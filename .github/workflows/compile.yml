@@ -221,8 +221,7 @@ jobs:
           _specmanual=''
           for _p in ${{ inputs.compiles }}; do
             [ -z "$(find "$GITHUB_WORKSPACE/feeds" -maxdepth 2 -name $_p 2>/dev/null)" ] && continue
-              && _specmanual="${_specmanual:+$_specmanual }$_p" \
-              || _manual="${_manual:+$_manual }$_p"
+            _specmanual="${_specmanual:+$_specmanual }$_p" || _manual="${_manual:+$_manual }$_p"
           done
           PACKAGES="${_manual:-$([ -n "$_specmanual" ] && echo '' || echo $_all)}"
           echo "Building: $PACKAGES"
