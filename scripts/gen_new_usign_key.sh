@@ -2,7 +2,7 @@
 set -euo pipefail
 
 USIGN="./x86_64/bin/usign"
-KEY_DIR="keys/usign"
+KEY_DIR="../keys/usign"
 COMMENT="Public usign key for fantastic-packages builds"
 
 # Pastikan direktori ada

@@ -7,7 +7,7 @@ KEYSIZE=4096
 EXPIRE=0
 NAME="fantastic packages"
 MAIL="fantastic-packages@users.noreply.github.com"
-KEY_DIR="keys/gpg"
+KEY_DIR="../keys/gpg"
 
 # Siapkan direktori output
 mkdir -p "$KEY_DIR"

@@ -6,7 +6,7 @@
 set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
 # Configuration
-readonly KEY_DIR="keys/apksign"
+readonly KEY_DIR="../keys/apksign"
 readonly KEY_CURVE="prime256v1"
 readonly TEMP_PRIVATE_KEY="private-key.pem"
 readonly TEMP_PUBLIC_KEY="public-key.pem"
