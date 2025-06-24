@@ -84,12 +84,17 @@ jobs:
       - name: 🖥️ Display system specifications
         run: |
           echo "::group::System Information"
+          
+          # Calculate memory in GB
+          MEMORY_BYTES="${{ steps.system-info.outputs.totalmem }}"
+          MEMORY_GB=$(echo "scale=1; $MEMORY_BYTES / 1073741824" | bc -l)
+          
           cat << EOF
           🖥️  CPU: ${{ steps.system-info.outputs.cpu-model }} (${{ steps.system-info.outputs.cpu-core }} cores)
           🏠  Host: ${{ steps.system-info.outputs.hostname }}
           🐧  OS: ${{ steps.system-info.outputs.name }} ${{ steps.system-info.outputs.release }}
           🔧  Kernel: ${{ steps.system-info.outputs.kernel-release }}
-          💾  Memory: ${{ steps.system-info.outputs.totalmem }} bytes (~${{ steps.system-info.outputs.totalmem | tonumber / 1073741824 | round(1) }} GB)
+          💾  Memory: ${{ steps.system-info.outputs.totalmem }} bytes (~${MEMORY_GB} GB)
           📦  Platform: ${{ steps.system-info.outputs.platform }}
           EOF
           echo "::endgroup::"
