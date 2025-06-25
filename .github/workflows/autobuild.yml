@@ -1,139 +1,461 @@
-name: AutoBuild
+name: 🚀 AutoCompiler OpenWrt Packages
 
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/**'
+      - 'README.md'
+      - 'docs/**'
+      - '*.md'
+    
   workflow_dispatch:
     inputs:
-      specify_packages:
-        description: 'Specify packages'
+      compile_pkg:
+        description: '📦 Compile specific packages (leave empty for all packages in list_packages.txt)'
         required: false
-        default: 'A B C etc.'
+        default: ''
         type: string
-
-  push:
-    branches: [ main ]
-    paths:
-    - 'Makefile'
-
-  watch:
-    types: [started]
-
+        
+      verbose:
+        description: '🔍 Verbose logging level'
+        required: false
+        default: '0'
+        type: choice
+        options:
+          - '0'
+          - '1'
+          - '2'
+        
+      without_pages:
+        description: '🚫 Skip GitHub Pages deployment'
+        required: false
+        default: false
+        type: boolean
+        
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: write
+  
 env:
-  DELETE_OLD_WORKFLOW: true
-  WORKFLOW_RETAIN_DAYS: 14
-  KEEP_RUNS_RECORD: 100
+  DEBIAN_FRONTEND: noninteractive
+  TZ: Asia/Jakarta
+  
+jobs: 
+  prepare:
+    name: 🔍 Prepare Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.packages.outputs.packages }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}"
-  cancel-in-progress: false
+      - name: 📋 Read Package List
+        if: inputs.compile_pkg == ''
+        id: list_package
+        uses: jaywcjlove/github-action-read-file@main
+        with:
+          branch: main
+          path: list_packages.txt
 
-jobs:
-  compile:
-    permissions:
-      contents: write  # To push a branch
-    strategy:
-      matrix:
-        version: [SNAPSHOT] # or SNAPSHOT
-        arch_packages: [
-          x86_64,
-          aarch64_cortex-a53,
-          aarch64_generic,
-          arm_cortex-a15_neon-vfpv4,
-          arm_cortex-a9_vfpv3-d16,
-          mips_24kc,
-          mipsel_24kc,
-          riscv64_generic
-          ]
-        include:
-          - apk_sign_id: ${{ vars.APK_SIGN_ID }}
-          - gpg_id: ${{ vars.GPG_ID }}
-          - arch_packages: x86_64
-            target: ['x86', '64']
-            profile: generic # for imagebuilder
-          - arch_packages: aarch64_cortex-a53
-            target: ['mvebu', 'cortexa53']
-          - arch_packages: aarch64_generic
-            target: ['armsr', 'armv8']
-          - arch_packages: arm_cortex-a15_neon-vfpv4
-            target: ['armsr', 'armv7']
-          - arch_packages: arm_cortex-a9_vfpv3-d16
-            target: ['mvebu', 'cortexa9']
-          - arch_packages: mips_24kc
-            target: ['ath79', 'generic']
-          - arch_packages: mipsel_24kc
-            target: ['ramips', 'mt7621']
-          - arch_packages: riscv64_generic
-            target: ['sifiveu', 'generic']
-    uses: ./.github/workflows/compile.yml
-    with:
-      compiles: ${{ inputs.specify_packages }}
-      GHPAGES_PATH: 'releases'
-      OP_VERSION: ${{ matrix.version }}
-      ARCH: ${{ matrix.arch_packages }}
-      BOARD: ${{ matrix.target[0] }}
-      SUBTARGET: ${{ matrix.target[1] }}
-      MODEL: ${{ matrix.profile }}
-      APK_SIGN_ID: ${{ matrix.apk_sign_id }}
-      GPG_ID: ${{ matrix.gpg_id }}
-    secrets: inherit
+      - name: 📦 Set Packages Output
+        id: packages
+        run: |
+          if [ -n "${{ inputs.compile_pkg }}" ]; then
+            echo "packages=${{ inputs.compile_pkg }}" >> $GITHUB_OUTPUT
+          else
+            echo "packages=${{ steps.list_package.outputs.content }}" >> $GITHUB_OUTPUT
+          fi
 
-  push_packages:
-    needs: compile
+      - name: 🏗️ Generate Build Matrix
+        id: matrix
+        run: |
+          cat << 'EOF' > matrix.json
+          {
+            "include": [
+              {"release": "master", "arch": "x86_64", "display": "SNAPSHOT x86_64"},
+              {"release": "master", "arch": "mips_24kc", "display": "SNAPSHOT MIPS"},
+              {"release": "master", "arch": "mipsel_24kc", "display": "SNAPSHOT MIPSEL"},
+              {"release": "master", "arch": "arm_cortex-a7_neon-vfpv4", "display": "SNAPSHOT ARM Cortex-A7"},
+              {"release": "master", "arch": "aarch64_cortex-a53", "display": "SNAPSHOT ARM64 A53"},
+              {"release": "master", "arch": "aarch64_cortex-a72", "display": "SNAPSHOT ARM64 A72"},
+              {"release": "master", "arch": "aarch64_generic", "display": "SNAPSHOT ARM64 Generic"},
+              {"release": "24.10.2", "arch": "x86_64", "display": "24.10.2 x86_64"},
+              {"release": "24.10.2", "arch": "mips_24kc", "display": "24.10.2 MIPS"},
+              {"release": "24.10.2", "arch": "mipsel_24kc", "display": "24.10.2 MIPSEL"},
+              {"release": "24.10.2", "arch": "arm_cortex-a7_neon-vfpv4", "display": "24.10.2 ARM Cortex-A7"},
+              {"release": "24.10.2", "arch": "aarch64_cortex-a53", "display": "24.10.2 ARM64 A53"},
+              {"release": "24.10.2", "arch": "aarch64_cortex-a72", "display": "24.10.2 ARM64 A72"},
+              {"release": "24.10.2", "arch": "aarch64_generic", "display": "24.10.2 ARM64 Generic"},
+              {"release": "23.05.5", "arch": "x86_64", "display": "23.05.5 x86_64"},
+              {"release": "23.05.5", "arch": "mips_24kc", "display": "23.05.5 MIPS"},
+              {"release": "23.05.5", "arch": "mipsel_24kc", "display": "23.05.5 MIPSEL"},
+              {"release": "23.05.5", "arch": "arm_cortex-a7_neon-vfpv4", "display": "23.05.5 ARM Cortex-A7"},
+              {"release": "23.05.5", "arch": "aarch64_cortex-a53", "display": "23.05.5 ARM64 A53"},
+              {"release": "23.05.5", "arch": "aarch64_cortex-a72", "display": "23.05.5 ARM64 A72"},
+              {"release": "23.05.5", "arch": "aarch64_generic", "display": "23.05.5 ARM64 Generic"}
+            ]
+          }
+          EOF
+          echo "matrix=$(cat matrix.json | jq -c .)" >> $GITHUB_OUTPUT
+
+  build_ipk:
+    name: 🔨 Build ${{ matrix.display }}
+    needs: prepare
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+      
     steps:
-      - name: Checkout
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 🗂️ Create Artifacts Directory
+        run: |
+          mkdir -p artifacts
+          echo "Build started at $(date)" > artifacts/build.log
+         
+      - name: 📦 List Packages to Build
+        run: |
+          echo "::group::📋 Package Information"
+          echo "Release: ${{ matrix.release }}"
+          echo "Architecture: ${{ matrix.arch }}"
+          echo "Packages: ${{ needs.prepare.outputs.packages }}"
+          echo "::endgroup::"
+        
+      - name: 🏗️ Build OpenWrt Packages
+        uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: ${{ matrix.arch }}-${{ matrix.release }}
+          ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
+          FEED_DIR: ${{ github.workspace }}/feeds
+          PACKAGES: ${{ needs.prepare.outputs.packages }}
+          INDEX: 1
+          V: ${{ inputs.verbose || '0' }}
+          IGNORE_ERRORS: 1
+        
+      - name: 📊 Build Summary
+        if: always()
+        run: |
+          echo "::group::📊 Build Results"
+          if [ -d "artifacts/bin/packages/${{ matrix.arch }}" ]; then
+            echo "✅ Build successful for ${{ matrix.arch }}-${{ matrix.release }}"
+            echo "📦 Generated packages:"
+            
+            # Handle both .ipk (stable) and .apk (master) formats
+            if [ "${{ matrix.release }}" = "master" ]; then
+              find artifacts/bin/packages/${{ matrix.arch }} -name "*.apk" | head -20
+              pkg_count=$(find artifacts/bin/packages/${{ matrix.arch }} -name "*.apk" | wc -l)
+              echo "📈 Total APK packages built: $pkg_count"
+            else
+              find artifacts/bin/packages/${{ matrix.arch }} -name "*.ipk" | head -20
+              pkg_count=$(find artifacts/bin/packages/${{ matrix.arch }} -name "*.ipk" | wc -l)
+              echo "📈 Total IPK packages built: $pkg_count"
+            fi
+          else
+            echo "❌ Build failed or no packages generated"
+          fi
+          echo "::endgroup::"
+        
+      - name: 📤 Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: openwrt_${{ matrix.release }}_${{ matrix.arch }}
+          path: ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/*
+          retention-days: 5
+          compression-level: 6
+
+  push_packages:
+    name: 🚀 Deploy Packages
+    needs: [prepare, build_ipk]
+    if: always() && (needs.build_ipk.result == 'success' || needs.build_ipk.result == 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: 📥 Checkout Pages Branch
         uses: actions/checkout@v4
         with:
           ref: 'gh-pages'
-      - name: Download artifact
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 📦 Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: OpenWRT-Build-*
-          path: packages-artifact
-          merge-multiple: true
-      - name: Move artifact
+          path: ./downloads
+        
+      - name: 🗂️ Organize Release Structure
         shell: bash
         run: |
-          cp -rf packages-artifact/*/ ./
-          rm -rf packages-artifact/ 2>/dev/null
-      - name: Clean old apk
-        shell: bash
-        run: |
-          # clean old apk
-          clean_old_apk() {
-            local rmlist=$(ls -1 *.apk | grep -Ev "^($(jq -rc '.packages|to_entries[]|"\(.key)-\(.value)"' index.json | tr '\n' '|' | sed 's,|$,,'))")
-            [ -z "$rmlist" ] || rm -f $rmlist
-          }
-          #
-          for pa in $(find * -name index.json -type f | grep -Ev '^(23.05|24.10)'); do
-            pushd "$(dirname $pa)"; clean_old_apk; popd
+          echo "::group::🗂️ Creating Release Structure"
+          
+          # Create releases directory
+          mkdir -p releases
+          
+          # Define versions and architectures
+          declare -a versions=("master" "24.10.2" "23.05.5")
+          declare -a archs=("x86_64" "mips_24kc" "mipsel_24kc" "arm_cortex-a7_neon-vfpv4" "aarch64_cortex-a53" "aarch64_cortex-a72" "aarch64_generic")
+          
+          # Process each version and architecture
+          for version in "${versions[@]}"; do
+            # Map master to SNAPSHOT, keep major.minor for stable versions
+            if [ "$version" = "master" ]; then
+              vers_short="SNAPSHOT"
+              echo "📁 Processing version: $version -> $vers_short (OpenWrt Snapshot)"
+            else
+              vers_short=$(echo "$version" | sed 's/\.[^.]*$//')
+              echo "📁 Processing version: $version -> $vers_short"
+            fi
+            
+            # Determine package extension based on version
+            if [ "$version" = "master" ]; then
+              pkg_ext="apk"
+              echo "  📦 Using APK format for snapshot branch"
+            else
+              pkg_ext="ipk"
+              echo "  📦 Using IPK format for stable branch"
+            fi
+            
+            for arch in "${archs[@]}"; do
+              artifact_dir="downloads/openwrt_${version}_${arch}"
+              target_dir="releases/${vers_short}/packages/${arch}"
+              
+              if [ -d "$artifact_dir" ]; then
+                echo "  📦 Processing $arch..."
+                rm -rf "$target_dir"
+                mkdir -p "$target_dir"
+                
+                # Copy packages with correct extension, excluding routing and telephony
+                find "$artifact_dir" -name "*.$pkg_ext" -not -path "*/routing/*" -not -path "*/telephony/*" \
+                  -exec cp {} "$target_dir/" \; 2>/dev/null || true
+                
+                # Create package index if packages exist
+                if [ "$(ls -A $target_dir 2>/dev/null)" ]; then
+                  cd "$target_dir"
+                  echo "Package: $(basename $target_dir)" > Packages
+                  echo "Architecture: $arch" >> Packages
+                  echo "Version: $version" >> Packages
+                  echo "Branch: $([ "$version" = "master" ] && echo "SNAPSHOT" || echo "STABLE")" >> Packages
+                  echo "Format: $pkg_ext" >> Packages
+                  echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> Packages
+                  echo "" >> Packages
+                  cd - > /dev/null
+                  
+                  pkg_count=$(ls -1 "$target_dir"/*.$pkg_ext 2>/dev/null | wc -l)
+                  echo "    ✅ $pkg_count $pkg_ext packages copied"
+                else
+                  echo "    ⚠️  No packages found"
+                fi
+              fi
+            done
           done
-      - name: Display structure of downloaded files
-        run: ls -R
-      - name: Commit and push Packages
-        env:
-          Branch: gh-pages
+          
+          # Cleanup downloads
+          rm -rf downloads
+          
+          echo "::endgroup::"
+          
+      - name: 📊 Generate Repository Statistics
         run: |
-          git config --local user.name "GitHub Action"
-          git config --local user.email "actions-user@users.noreply.github.com"
-          git add .
-          git reset HEAD ./**/targets/
-          git diff-index --cached --quiet HEAD ./**/packages/**/*.{ipk,apk} \
-          && git diff-index --cached --quiet HEAD ./**/packages/**/packages.adb \
-          && git diff-index --cached --quiet HEAD ./**/*.pub \
-          || (git commit -m "Update packages" && git push)
-
-  clean-up-old-workflow:
-    needs: push_packages
-    permissions:
-      contents: read
-      actions: write
+          echo "::group::📊 Repository Statistics"
+          
+          # Create stats file
+          cat > releases/stats.json << EOF
+          {
+            "generated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "workflow_run": "${{ github.run_number }}",
+            "commit": "${{ github.sha }}",
+            "versions": {}
+          }
+          EOF
+          
+          # Count packages per version
+          for version_dir in releases/*/; do
+            if [ -d "$version_dir" ] && [ "$(basename $version_dir)" != "stats.json" ]; then
+              version=$(basename "$version_dir")
+              
+              # Count both APK and IPK packages
+              apk_count=$(find "$version_dir" -name "*.apk" 2>/dev/null | wc -l)
+              ipk_count=$(find "$version_dir" -name "*.ipk" 2>/dev/null | wc -l)
+              total_packages=$((apk_count + ipk_count))
+              
+              if [ "$version" = "SNAPSHOT" ]; then
+                echo "📈 $version (master): $apk_count APK packages"
+              elif [ $ipk_count -gt 0 ]; then
+                echo "📈 $version: $ipk_count IPK packages"
+              else
+                echo "📈 $version: 0 packages"
+              fi
+            fi
+          done
+          
+          echo "::endgroup::"
+        
+      - name: 📁 Display Repository Structure
+        working-directory: releases
+        run: |
+          echo "::group::📁 Repository Structure"
+          tree -L 3 2>/dev/null || find . -type d | head -20
+          echo "::endgroup::"
+        
+      - name: 🚀 Commit and Push Changes
+        run: |
+          git config --local user.name "🤖 OpenWrt Bot"
+          git config --local user.email "openwrt-bot@users.noreply.github.com"
+          
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "ℹ️ No changes to commit"
+          else
+            git add .
+            git commit -m "            🚀 Update OpenWrt Packages
+            
+            📦 Workflow run: #${{ github.run_number }}
+            🔨 Commit: ${{ github.sha }}
+            ⏰ Updated: $(date -u +%Y-%m-%d %H:%M:%S) UTC
+            📋 Packages: ${{ needs.prepare.outputs.packages }}
+            🗂️ Structure: SNAPSHOT (APK) + 24.10/23.05 (IPK)"
+            
+            git push
+            echo "✅ Changes pushed successfully"
+          fi
+          
+  build_pages:
+    name: 🌐 Build GitHub Pages
+    needs: [prepare, push_packages]
+    if: inputs.without_pages != true && !cancelled() && needs.push_packages.result == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+      
     steps:
-      - name: Delete old Workflow Runs
-        uses: Mattraks/delete-workflow-runs@v2.0.6
-        if: env.DELETE_OLD_WORKFLOW == 'true' && !cancelled()
+      - name: 📥 Checkout Pages Branch
+        uses: actions/checkout@v4
         with:
-          retain_days: ${{ env.WORKFLOW_RETAIN_DAYS }}
-          keep_minimum_runs: ${{ env.KEEP_RUNS_RECORD }}
+          ref: 'gh-pages'
+          lfs: true
+          submodules: true
+          
+      - name: 💎 Setup Ruby Environment
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          cache-version: 1
+          
+      - name: 🔧 Pre-build Processing
+        env:
+          SERVER_HOME: releases
+        run: |
+          if [ -f "./prenodes.sh" ]; then
+            chmod +x ./prenodes.sh
+            ./prenodes.sh
+          else
+            echo "⚠️ prenodes.sh not found, skipping pre-processing"
+          fi
+        
+      - name: ⚙️ Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v4
+        
+      - name: 🏗️ Build Jekyll Site
+        run: |
+          echo "::group::🏗️ Building Jekyll Site"
+          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}" --verbose
+          echo "::endgroup::"
+        env:
+          JEKYLL_ENV: production
+          
+      - name: 📤 Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./_site
+          
+  deploy_pages:
+    name: 🌐 Deploy to GitHub Pages
+    needs: build_pages
+    if: needs.build_pages.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+      
+    steps:
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
+  cleanup:
+    name: 🧹 Cleanup Artifacts
+    needs: [push_packages, deploy_pages]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+      
+    steps:
+      - name: 🧹 Delete Old Workflow Runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 7
+          keep_minimum_runs: 5
+          delete_workflow_pattern: "AutoCompiler OpenWrt Packages"
+          
+      - name: 🗑️ Clean Build Artifacts
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: openwrt_*
+          failOnError: false
+          
+      - name: 📊 Final Cleanup Summary
+        run: |
+          echo "::group::🧹 Cleanup Summary"
+          echo "✅ Old workflow runs cleaned (kept last 5 runs)"
+          echo "✅ Build artifacts removed"
+          echo "✅ Packages organized:"
+          echo "   📁 SNAPSHOT/ (APK packages from master)"
+          echo "   📁 24.10/ (IPK packages from 24.10.x)"
+          echo "   📁 23.05/ (IPK packages from 23.05.x)"
+          echo "::endgroup::"
+
+  notify:
+    name: 📢 Notification
+    needs: [prepare, build_ipk, push_packages, deploy_pages]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📊 Workflow Summary
+        run: |
+          echo "## 🚀 OpenWrt Package Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Prepare | ${{ needs.prepare.result == 'success' && '✅' || '❌' }} ${{ needs.prepare.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔨 Build IPK | ${{ needs.build_ipk.result == 'success' && '✅' || '❌' }} ${{ needs.build_ipk.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Push Packages | ${{ needs.push_packages.result == 'success' && '✅' || '❌' }} ${{ needs.push_packages.result }} |" >> $GITHUB_STEP_SUMMARY  
+          echo "| 🌐 Deploy Pages | ${{ needs.deploy_pages.result == 'success' && '✅' || needs.deploy_pages.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.deploy_pages.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**📦 Packages Built:** ${{ needs.prepare.outputs.packages }}" >> $GITHUB_STEP_SUMMARY
+          echo "**⏰ Completed:** $(date -u +%Y-%m-%d\ %H:%M:%S) UTC" >> $GITHUB_STEP_SUMMARY
