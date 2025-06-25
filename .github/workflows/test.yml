@@ -81,8 +81,8 @@ jobs:
           {
             "include": [
               {"release": "SNAPSHOT", "arch": "x86_64", "display": "SNAPSHOT x86_64"},
-              {"release": "openwrt-24.10", "arch": "x86_64", "display": "24.10 x86_64"},
-              {"release": "openwrt-23.05", "arch": "x86_64", "display": "23.05 x86_64"}
+              {"release": "24.10.2", "arch": "x86_64", "display": "24.10 x86_64"},
+              {"release": "23.05.5", "arch": "x86_64", "display": "23.05 x86_64"}
             ]
           }
           EOF
