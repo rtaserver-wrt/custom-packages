@@ -1,0 +1,236 @@
+name: TEST
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/**'
+      - 'README.md'
+      - 'docs/**'
+      - '*.md'
+  workflow_dispatch:
+    inputs:
+      compile_pkg:
+        description: '📦 Compile specific packages (leave empty for all packages)'
+        required: false
+        default: ''
+        type: string
+      verbose:
+        description: '🔍 Verbose logging level'
+        required: false
+        default: '0'
+        type: choice
+        options: ['0', '1', '2']
+      without_pages:
+        description: '🚫 Skip GitHub Pages deployment'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: write
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  TZ: Asia/Jakarta
+
+jobs:
+  prepare:
+    name: 🔍 Prepare Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.packages.outputs.packages }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📋 Read Package List
+        if: inputs.compile_pkg == ''
+        id: list_package
+        run: |
+          echo "::group::📋 Reading package list"
+          pkgs="$(ls -1 feeds/packages 2>/dev/null | tr '\n' ' ')"
+          luci="$(ls -1 feeds/luci 2>/dev/null | tr '\n' ' ')"
+          echo "Packages: $pkgs"
+          echo "LuCI: $luci"
+          echo "content=$pkgs $luci" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
+
+      - name: 📦 Set Packages Output
+        id: packages
+        run: |
+          if [ -n "${{ inputs.compile_pkg }}" ]; then
+            echo "packages=${{ inputs.compile_pkg }}" >> $GITHUB_OUTPUT
+          else
+            echo "packages=${{ steps.list_package.outputs.content }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🏗️ Generate Build Matrix
+        id: matrix
+        run: |
+          cat << 'EOF' > matrix.json
+          {
+            "include": [
+              {"release": "SNAPSHOT", "arch": "x86_64", "display": "SNAPSHOT x86_64"},
+              {"release": "openwrt-24.10", "arch": "x86_64", "display": "24.10 x86_64"},
+              {"release": "openwrt-23.05", "arch": "x86_64", "display": "23.05 x86_64"}
+            ]
+          }
+          EOF
+          echo "matrix=$(jq -c . matrix.json)" >> $GITHUB_OUTPUT
+
+  build_ipk:
+    name: 🔨 Build ${{ matrix.display }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📂 Prepare Artifacts
+        run: mkdir -p artifacts
+
+      - name: 🏗️ Build OpenWrt Packages
+        uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: ${{ matrix.arch }}-${{ matrix.release }}
+          ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
+          FEED_DIR: ${{ github.workspace }}/feeds
+          PACKAGES: ${{ needs.prepare.outputs.packages }}
+          INDEX: 1
+          V: ${{ inputs.verbose || '0' }}
+          IGNORE_ERRORS: true
+          NO_REFRESH_CHECK: true
+
+      - name: 📤 Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: openwrt_${{ matrix.release }}_${{ matrix.arch }}
+          path: artifacts/bin/packages/${{ matrix.arch }}/*
+          retention-days: 5
+
+  push_packages:
+    name: 🚀 Deploy Packages
+    needs: [prepare, build_ipk]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: 📦 Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./downloads
+
+      - name: 🗂️ Organize Packages
+        run: |
+          mkdir -p releases
+          for d in downloads/*; do
+            ver_arch=$(basename "$d")
+            IFS="_" read -r _ver _rel _arch <<< "$ver_arch"
+            dest="releases/$_rel/packages/$_arch"
+            mkdir -p "$dest"
+            cp "$d"/*.{ipk,apk} "$dest/" 2>/dev/null || true
+          done
+
+      - name: 🚀 Commit Changes
+        run: |
+          git config user.name "OpenWrt Bot"
+          git config user.email "openwrt-bot@noreply.github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No changes."
+          else
+            git commit -m "Update OpenWrt Packages [${{ github.run_number }}]"
+            git push
+          fi
+
+  build_pages:
+    name: 🌐 Build GitHub Pages
+    needs: [push_packages]
+    if: inputs.without_pages != true && needs.push_packages.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          lfs: true
+          submodules: true
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - run: |
+          if [ -x ./prenodes.sh ]; then ./prenodes.sh; fi
+
+      - id: pages
+        uses: actions/configure-pages@v4
+
+      - run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: production
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy_pages:
+    name: 🚀 Deploy GitHub Pages
+    needs: build_pages
+    # if: needs.build_pages.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  cleanup:
+    name: 🧹 Cleanup
+    needs: [push_packages, deploy_pages]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 7
+          keep_minimum_runs: 5
+
+      - uses: geekyeggo/delete-artifact@v4
+        with:
+          name: openwrt_*
+          failOnError: false
+
+  notify:
+    name: 📢 Summary
+    needs: [prepare, build_ipk, push_packages, deploy_pages]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📊 Summary
+        run: |
+          echo "## ✅ Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Prepare | ${{ needs.prepare.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build IPK | ${{ needs.build_ipk.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Push | ${{ needs.push_packages.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pages | ${{ needs.deploy_pages.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
