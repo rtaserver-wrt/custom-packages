@@ -145,7 +145,7 @@ jobs:
           PACKAGES: ${{ needs.prepare.outputs.packages }}
           INDEX: 1
           V: ${{ inputs.verbose || '0' }}
-          IGNORE_ERRORS: 1
+          IGNORE_ERRORS: true
         
       - name: 📊 Build Summary
         if: always()
