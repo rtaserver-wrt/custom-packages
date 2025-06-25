@@ -189,12 +189,10 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.has_packages == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
     permissions:
       contents: write
     strategy:
       fail-fast: false
-      max-parallel: 3
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
       
     steps:
@@ -306,7 +304,6 @@ jobs:
     needs: [prepare, build_ipk]
     if: always() && needs.prepare.outputs.has_packages == 'true' && (needs.build_ipk.result == 'success' || needs.build_ipk.result == 'failure')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     permissions:
       contents: write
       
@@ -530,7 +527,6 @@ jobs:
     needs: [prepare, push_packages]
     if: inputs.without_pages != true && !cancelled() && needs.push_packages.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: write
       pages: write
@@ -606,7 +602,6 @@ jobs:
     needs: build_pages
     if: needs.build_pages.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
