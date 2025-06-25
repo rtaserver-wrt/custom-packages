@@ -138,8 +138,9 @@ jobs:
       - name: 🏗️ Generate Build Matrix
         id: matrix
         run: |
-          # Base matrix configuration
-          matrix_config='{
+          # Create base matrix configuration file
+          cat > matrix.json << 'EOF'
+          {
             "include": [
               {"release": "SNAPSHOT", "arch": "x86_64", "display": "SNAPSHOT x86_64"},
               {"release": "SNAPSHOT", "arch": "mips_24kc", "display": "SNAPSHOT MIPS"},
@@ -163,25 +164,37 @@ jobs:
               {"release": "23.05.5", "arch": "aarch64_cortex-a72", "display": "23.05.5 ARM64 A72"},
               {"release": "23.05.5", "arch": "aarch64_generic", "display": "23.05.5 ARM64 Generic"}
             ]
-          }'
+          }
+          EOF
           
           # Filter matrix if specific release is requested
           if [ -n "${{ inputs.target_release }}" ]; then
             echo "🎯 Filtering matrix for release: ${{ inputs.target_release }}"
-            matrix_config=$(echo "$matrix_config" | jq --arg release "${{ inputs.target_release }}" '.include = (.include | map(select(.release == $release)))')
+            jq --arg release "${{ inputs.target_release }}" '.include = (.include | map(select(.release == $release)))' matrix.json > filtered_matrix.json
+            mv filtered_matrix.json matrix.json
           fi
           
-          echo "matrix=$matrix_config" >> $GITHUB_OUTPUT
+          # Validate JSON and set output
+          if jq empty matrix.json 2>/dev/null; then
+            echo "✅ Matrix JSON is valid"
+            matrix_content=$(jq -c . matrix.json)
+            echo "matrix=$matrix_content" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Invalid JSON in matrix configuration"
+            exit 1
+          fi
 
   build_ipk:
     name: 🔨 Build ${{ matrix.display }}
     needs: prepare
     if: needs.prepare.outputs.has_packages == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     permissions:
       contents: write
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
       
     steps:
@@ -233,6 +246,7 @@ jobs:
           V: ${{ inputs.verbose || '0' }}
           IGNORE_ERRORS: true
           NO_REFRESH_CHECK: true
+          CCACHE_DIR: ${{ runner.temp }}/ccache
         
       - name: 📊 Build Summary
         if: always()
@@ -292,6 +306,7 @@ jobs:
     needs: [prepare, build_ipk]
     if: always() && needs.prepare.outputs.has_packages == 'true' && (needs.build_ipk.result == 'success' || needs.build_ipk.result == 'failure')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       
@@ -520,6 +535,7 @@ jobs:
     needs: [prepare, push_packages]
     if: inputs.without_pages != true && !cancelled() && needs.push_packages.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
       pages: write
@@ -595,6 +611,7 @@ jobs:
     needs: build_pages
     if: needs.build_pages.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
