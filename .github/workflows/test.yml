@@ -504,31 +504,26 @@ jobs:
         
       - name: 🚀 Commit and Push Changes
         run: |
-          git config --local user.name "🤖 OpenWrt Bot"
-          git config --local user.email "openwrt-bot@users.noreply.github.com"
+          git config --local user.name "GitHub Action"
+          git config --local user.email "actions-user@users.noreply.github.com"
           
-          # Check if there are any changes
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "ℹ️ No changes to commit"
-          else
-            git add .
+          git add . || echo "No changes to add"
             
-            # Create detailed commit message
-            commit_msg="🚀 Update OpenWrt Packages
+          # Create detailed commit message
+          commit_msg="🚀 Update OpenWrt Packages
 
-            📦 Workflow: #${{ github.run_number }}
-            🔨 Commit: ${{ github.sha }}
-            ⏰ Updated: $(date -u +%Y-%m-%d %H:%M:%S) UTC
-            📋 Built: ${{ needs.prepare.outputs.packages }}
-            📊 Total: $total_packages packages
-            🗂️ Structure: SNAPSHOT (APK) + Stable (IPK)
+          📦 Workflow: #${{ github.run_number }}
+          🔨 Commit: ${{ github.sha }}
+          ⏰ Updated: $(date -u +%Y-%m-%d %H:%M:%S) UTC
+          📋 Built: ${{ needs.prepare.outputs.packages }}
+          📊 Total: $total_packages packages
+          🗂️ Structure: SNAPSHOT (APK) + Stable (IPK)
             
-            $([ -n "${{ inputs.target_release }}" ] && echo "🎯 Target: ${{ inputs.target_release }}" || echo "🌐 All releases updated")"
+          $([ -n "${{ inputs.target_release }}" ] && echo "🎯 Target: ${{ inputs.target_release }}" || echo "🌐 All releases updated")"
             
-            git commit -m "$commit_msg"
-            git push
-            echo "✅ Changes pushed successfully"
-          fi
+          git commit -m "$commit_msg" || echo "No changes to commit"
+          git push || echo "⚠️ No changes to push"
+          echo "✅ Changes pushed successfully"
           
   build_pages:
     name: 🌐 Build GitHub Pages
