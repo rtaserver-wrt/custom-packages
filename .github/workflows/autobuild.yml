@@ -158,11 +158,11 @@ jobs:
           PACKAGES: ${{ needs.prepare.outputs.packages }}
           INDEX: 1
           V: ${{ inputs.verbose || '0' }}
-          IGNORE_ERRORS: 1
-          NO_REFRESH_CHECK: 1
-          NO_SHFMT_CHECK: 1
-          KEY_BUILD: ${{ secrets.KEY_BUILD }}
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          IGNORE_ERRORS: true
+          NO_REFRESH_CHECK: true
+          NO_SHFMT_CHECK: true
+          # KEY_BUILD: ${{ secrets.KEY_BUILD }}
+          # PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         
       - name: 📊 Build Summary
         if: always()
