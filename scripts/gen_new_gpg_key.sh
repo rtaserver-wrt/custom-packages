@@ -2,12 +2,13 @@
 set -euo pipefail
 
 # Konfigurasi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PWSIZE=16
 KEYSIZE=4096
 EXPIRE=0
-NAME="fantastic packages"
-MAIL="fantastic-packages@users.noreply.github.com"
-KEY_DIR="../keys/gpg"
+NAME="rtaserver-wrt"
+MAIL="rtaserver-wrt@users.noreply.github.com"
+KEY_DIR="$SCRIPT_DIR/../keys/gpg"
 
 # Siapkan direktori output
 mkdir -p "$KEY_DIR"

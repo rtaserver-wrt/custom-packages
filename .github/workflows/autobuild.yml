@@ -148,9 +148,31 @@ jobs:
           echo "Architecture: ${{ matrix.arch }}"
           echo "Packages: ${{ needs.prepare.outputs.packages }}"
           echo "::endgroup::"
+
+      - name: 🛠️ Prepare Build KEY SIGN
+        id: keysbuild
+        run: |
+          echo "::group::🔑 Preparing Build Key"
+          keyusign=$(find "${{ github.workspace }}/keys/usign" -name '*.sec' | head -n1)
+          keyapksign=$(find "${{ github.workspace }}/keys/apksign" -name '*.sec' | head -n1)
+          if [ -f "$keyusign" ]; then
+            echo "Found key: $keyusign"
+            key_content=$(cat "$keyusign")
+            echo "KEY_BUILD_USIGN=$key_content" >> "$GITHUB_OUTPUT"
+          else
+            echo "No signing key found!"
+          fi
+          if [ -f "$keyapksign" ]; then
+            echo "Found key: $keyapksign"
+            key_content=$(cat "$keyapksign")
+            echo "KEY_BUILD_APKSIGN=$key_content" >> "$GITHUB_OUTPUT"
+          else
+            echo "No APK signing key found!"
+          fi
+          echo "::endgroup::"
         
       - name: 🏗️ Build OpenWrt Packages
-        uses: fantastic-packages/gh-action-sdk@master
+        uses: openwrt/gh-action-sdk@main
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.release }}
           ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
@@ -160,8 +182,9 @@ jobs:
           V: ${{ inputs.verbose || '0' }}
           IGNORE_ERRORS: 1
           NO_REFRESH_CHECK: 1
-          NO_REPO_FEEDS: 1
           NO_SHFMT_CHECK: 1
+          KEY_BUILD: ${{ steps.keysbuild.outputs.KEY_BUILD_USIGN }}
+          PRIVATE_KEY: ${{ steps.keysbuild.outputs.KEY_BUILD_APKSIGN }}
         
       - name: 📊 Build Summary
         if: always()
