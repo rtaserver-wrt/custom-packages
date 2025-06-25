@@ -150,7 +150,7 @@ jobs:
           echo "::endgroup::"
         
       - name: 🏗️ Build OpenWrt Packages
-        uses: openwrt/gh-action-sdk@main
+        uses: fantastic-packages/gh-action-sdk@master
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.release }}
           ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
@@ -158,8 +158,10 @@ jobs:
           PACKAGES: ${{ needs.prepare.outputs.packages }}
           INDEX: 1
           V: ${{ inputs.verbose || '0' }}
-          IGNORE_ERRORS: true
-          NO_REFRESH_CHECK: true
+          IGNORE_ERRORS: 1
+          NO_REFRESH_CHECK: 1
+          NO_REPO_FEEDS: 1
+          NO_SHFMT_CHECK: 1
         
       - name: 📊 Build Summary
         if: always()
