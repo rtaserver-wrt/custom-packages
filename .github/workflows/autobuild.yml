@@ -62,21 +62,20 @@ jobs:
         id: list_package
         run: |
           echo "::group::📋 Reading package list"
-          pkg_names=()
-          while IFS= read -r makefile; do
-            pkg_name=$(grep -E '^PKG_NAME\s*:?=\s*' "$makefile" | head -n1 | sed -E 's/^PKG_NAME\s*:?=\s*//')
-            if [ -n "$pkg_name" ]; then
-              pkg_names+=("$pkg_name")
-            fi
-          done < <(find feeds -name Makefile)
-          if [ ${#pkg_names[@]} -eq 0 ]; then
-            echo "⚠️ No packages found in feeds"
-            exit 1
-          else
-            echo "Found packages: ${pkg_names[*]}"
+          _packages="$(ls -1 $GITHUB_WORKSPACE/feeds/packages/ | tr '\n' ' ')"
+          _luci="$(ls -1 $GITHUB_WORKSPACE/feeds/luci/ | tr '\n' ' ')"
+          if [ -z "$_packages" ]; then
+            echo "⚠️ No packages found in feeds/packages"
+            _packages=""
           fi
+          if [ -z "$_luci" ]; then
+            echo "⚠️ No LuCI packages found in feeds/luci"
+            _luci=""
+          fi
+          echo "Packages: $_packages"
+          echo "LuCI Packages: $_luci"
           echo "::endgroup::"
-          echo "content=${pkg_names[*]}" >> $GITHUB_OUTPUT
+          echo "content=$_packages $_luci" >> $GITHUB_OUTPUT
 
       - name: 📦 Set Packages Output
         id: packages
@@ -93,13 +92,13 @@ jobs:
           cat << 'EOF' > matrix.json
           {
             "include": [
-              {"release": "master", "arch": "x86_64", "display": "SNAPSHOT x86_64"},
-              {"release": "master", "arch": "mips_24kc", "display": "SNAPSHOT MIPS"},
-              {"release": "master", "arch": "mipsel_24kc", "display": "SNAPSHOT MIPSEL"},
-              {"release": "master", "arch": "arm_cortex-a7_neon-vfpv4", "display": "SNAPSHOT ARM Cortex-A7"},
-              {"release": "master", "arch": "aarch64_cortex-a53", "display": "SNAPSHOT ARM64 A53"},
-              {"release": "master", "arch": "aarch64_cortex-a72", "display": "SNAPSHOT ARM64 A72"},
-              {"release": "master", "arch": "aarch64_generic", "display": "SNAPSHOT ARM64 Generic"},
+              {"release": "SNAPSHOT", "arch": "x86_64", "display": "SNAPSHOT x86_64"},
+              {"release": "SNAPSHOT", "arch": "mips_24kc", "display": "SNAPSHOT MIPS"},
+              {"release": "SNAPSHOT", "arch": "mipsel_24kc", "display": "SNAPSHOT MIPSEL"},
+              {"release": "SNAPSHOT", "arch": "arm_cortex-a7_neon-vfpv4", "display": "SNAPSHOT ARM Cortex-A7"},
+              {"release": "SNAPSHOT", "arch": "aarch64_cortex-a53", "display": "SNAPSHOT ARM64 A53"},
+              {"release": "SNAPSHOT", "arch": "aarch64_cortex-a72", "display": "SNAPSHOT ARM64 A72"},
+              {"release": "SNAPSHOT", "arch": "aarch64_generic", "display": "SNAPSHOT ARM64 Generic"},
               {"release": "24.10.2", "arch": "x86_64", "display": "24.10.2 x86_64"},
               {"release": "24.10.2", "arch": "mips_24kc", "display": "24.10.2 MIPS"},
               {"release": "24.10.2", "arch": "mipsel_24kc", "display": "24.10.2 MIPSEL"},
@@ -172,8 +171,8 @@ jobs:
             echo "✅ Build successful for ${{ matrix.arch }}-${{ matrix.release }}"
             echo "📦 Generated packages:"
             
-            # Handle both .ipk (stable) and .apk (master) formats
-            if [ "${{ matrix.release }}" = "master" ]; then
+            # Handle both .ipk (stable) and .apk (SNAPSHOT) formats
+            if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
               find artifacts/bin/packages/${{ matrix.arch }} -name "*.apk" | head -20
               pkg_count=$(find artifacts/bin/packages/${{ matrix.arch }} -name "*.apk" | wc -l)
               echo "📈 Total APK packages built: $pkg_count"
@@ -225,13 +224,12 @@ jobs:
           mkdir -p releases
           
           # Define versions and architectures
-          declare -a versions=("master" "24.10.2" "23.05.5")
+          declare -a versions=("SNAPSHOT" "24.10.2" "23.05.5")
           declare -a archs=("x86_64" "mips_24kc" "mipsel_24kc" "arm_cortex-a7_neon-vfpv4" "aarch64_cortex-a53" "aarch64_cortex-a72" "aarch64_generic")
           
           # Process each version and architecture
           for version in "${versions[@]}"; do
-            # Map master to SNAPSHOT, keep major.minor for stable versions
-            if [ "$version" = "master" ]; then
+            if [ "$version" = "SNAPSHOT" ]; then
               vers_short="SNAPSHOT"
               echo "📁 Processing version: $version -> $vers_short (OpenWrt Snapshot)"
             else
@@ -240,7 +238,7 @@ jobs:
             fi
             
             # Determine package extension based on version
-            if [ "$version" = "master" ]; then
+            if [ "$version" = "SNAPSHOT" ]; then
               pkg_ext="apk"
               echo "  📦 Using APK format for snapshot branch"
             else
@@ -267,7 +265,7 @@ jobs:
                   echo "Package: $(basename $target_dir)" > Packages
                   echo "Architecture: $arch" >> Packages
                   echo "Version: $version" >> Packages
-                  echo "Branch: $([ "$version" = "master" ] && echo "SNAPSHOT" || echo "STABLE")" >> Packages
+                  echo "Branch: $([ "$version" = "SNAPSHOT" ] && echo "SNAPSHOT" || echo "STABLE")" >> Packages
                   echo "Format: $pkg_ext" >> Packages
                   echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> Packages
                   echo "" >> Packages
@@ -312,7 +310,7 @@ jobs:
               total_packages=$((apk_count + ipk_count))
               
               if [ "$version" = "SNAPSHOT" ]; then
-                echo "📈 $version (master): $apk_count APK packages"
+                echo "📈 $version: $apk_count APK packages"
               elif [ $ipk_count -gt 0 ]; then
                 echo "📈 $version: $ipk_count IPK packages"
               else
@@ -450,7 +448,7 @@ jobs:
           echo "✅ Old workflow runs cleaned (kept last 5 runs)"
           echo "✅ Build artifacts removed"
           echo "✅ Packages organized:"
-          echo "   📁 SNAPSHOT/ (APK packages from master)"
+          echo "   📁 SNAPSHOT/ (APK packages from SNAPSHOT)"
           echo "   📁 24.10/ (IPK packages from 24.10.x)"
           echo "   📁 23.05/ (IPK packages from 23.05.x)"
           echo "::endgroup::"
