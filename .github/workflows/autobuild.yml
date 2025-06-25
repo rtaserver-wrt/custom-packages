@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       compile_pkg:
-        description: '📦 Compile specific packages (leave empty for all packages in list_packages.txt)'
+        description: '📦 Compile specific packages (leave empty for all packages)'
         required: false
         default: ''
         type: string
@@ -60,10 +60,23 @@ jobs:
       - name: 📋 Read Package List
         if: inputs.compile_pkg == ''
         id: list_package
-        uses: jaywcjlove/github-action-read-file@main
-        with:
-          branch: main
-          path: list_packages.txt
+        run: |
+          echo "::group::📋 Reading package list"
+          pkg_names=()
+          while IFS= read -r makefile; do
+            pkg_name=$(grep -E '^PKG_NAME\s*:?=\s*' "$makefile" | head -n1 | sed -E 's/^PKG_NAME\s*:?=\s*//')
+            if [ -n "$pkg_name" ]; then
+              pkg_names+=("$pkg_name")
+            fi
+          done < <(find feeds -name Makefile)
+          if [ ${#pkg_names[@]} -eq 0 ]; then
+            echo "⚠️ No packages found in feeds"
+            exit 1
+          else
+            echo "Found packages: ${pkg_names[*]}"
+          fi
+          echo "::endgroup::"
+          echo "content=${pkg_names[*]}" >> $GITHUB_OUTPUT
 
       - name: 📦 Set Packages Output
         id: packages
@@ -146,6 +159,7 @@ jobs:
           INDEX: 1
           V: ${{ inputs.verbose || '0' }}
           IGNORE_ERRORS: true
+          NO_REFRESH_CHECK: true
         
       - name: 📊 Build Summary
         if: always()
@@ -384,7 +398,7 @@ jobs:
           JEKYLL_ENV: production
           
       - name: 📤 Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./_site
           
@@ -403,7 +417,7 @@ jobs:
     steps:
       - name: 🚀 Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
 
   cleanup:
     name: 🧹 Cleanup Artifacts
