@@ -242,7 +242,7 @@ jobs:
           ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
           FEED_DIR: ${{ github.workspace }}/feeds
           PACKAGES: ${{ needs.prepare.outputs.packages }}
-          INDEX: 1
+          # INDEX: 1
           V: ${{ inputs.verbose || '0' }}
           IGNORE_ERRORS: true
           NO_REFRESH_CHECK: true
