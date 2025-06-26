@@ -1,0 +1,13 @@
+Package: atinout
+Version: 0.9.1
+Depends: libc
+License: GPLv2
+Section: net
+Architecture: aarch64_generic
+Installed-Size: 3475
+Filename: atinout_0.9.1_aarch64_generic.ipk
+Size: 4127
+SHA256sum: ccea62d1b01a469d214d7c72ded1c446be395f0efce8eb2fed37c6d5429dec8b
+Description:  Atinout is a program that will execute AT commands in sequence and
+ capture the response from the modem.
+

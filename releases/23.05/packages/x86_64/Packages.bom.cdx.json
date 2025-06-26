@@ -1,0 +1,1 @@
+{"version":1,"serialNumber":"urn:uuid:4ca304b7-218e-433b-a211-7a7890234dd0","specVersion":"1.4","metadata":{"timestamp":"2025-06-26T14:44:12Z"},"bomFormat":"CycloneDX","components":[{"name":"atinout","licenses":[{"license":{"name":"GPLv2"}}],"version":"0.9.1","type":"application"}]}

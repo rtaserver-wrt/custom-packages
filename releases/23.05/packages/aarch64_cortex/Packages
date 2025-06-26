@@ -1,0 +1,13 @@
+Package: atinout
+Version: 0.9.1
+Depends: libc
+License: GPLv2
+Section: net
+Architecture: aarch64_cortex-a72
+Installed-Size: 3475
+Filename: atinout_0.9.1_aarch64_cortex-a72.ipk
+Size: 4130
+SHA256sum: 537eee49509c6c08dbcb25819abb7e263305a6e9a1cf832fc42c2edff619d4af
+Description:  Atinout is a program that will execute AT commands in sequence and
+ capture the response from the modem.
+

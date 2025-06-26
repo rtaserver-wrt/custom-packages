@@ -1,0 +1,13 @@
+Package: atinout
+Version: 0.9.1
+Depends: libc
+License: GPLv2
+Section: net
+Architecture: mips_24kc
+Installed-Size: 3100
+Filename: atinout_0.9.1_mips_24kc.ipk
+Size: 3778
+SHA256sum: f692f5eb471b69893a09bcaee8af3522d57936536329c18f029ae8ab72c71b80
+Description:  Atinout is a program that will execute AT commands in sequence and
+ capture the response from the modem.
+

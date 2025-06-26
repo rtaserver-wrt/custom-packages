@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "architecture": "mips_24kc",
+  "packages": {
+    "atinout": "0.9.1"
+  }
+}
