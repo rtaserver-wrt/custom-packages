@@ -1,11 +1,13 @@
-# Copyright (C) 2025 rtaserver-wrt
+# Copyright (C) 2025 nosignals
+# 🚀 Modern AutoCompiler for OpenWrt Packages
+# ✨ Automated cross-architecture package compilation with smart caching
 
 name: 🏗️ AutoCompiler OpenWrt Packages
 
 on:
-  # workflow_run:
-  #   workflows: ["Auto Sync App"]
-  #   types: [completed]
+  workflow_run:
+    workflows: ["Auto Sync App"]
+    types: [completed]
 
   push:
     branches: [main]
@@ -16,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       compile_pkg:
-        description: '📦 Compile packages (default: all packages)'
+        description: '📦 Compile packages (default: all packages on list_packages.txt)'
         required: false
         default: ''
         type: string
@@ -62,11 +64,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: [
-          SNAPSHOT, 
-          24.10.2, 
-          23.05.5
-        ]
+        release: [SNAPSHOT, 24.10.2, 23.05.5]
         arch: [
           x86_64,
           mips_24kc,
@@ -154,48 +152,67 @@ jobs:
           case "$ARCH" in
             "x86_64")
               TARGET="x86/64"
-              SDK_PREFIX="x86-64"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-x86-64_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-x86-64_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
               ;;
             "mips_24kc")
               TARGET="ath79/generic"
-              SDK_PREFIX="ath79-generic"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-ath79-generic_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-ath79-generic_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
               ;;
             "mipsel_24kc")
               TARGET="ramips/mt7621"
-              SDK_PREFIX="ramips-mt7621"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-ramips-mt7621_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-ramips-mt7621_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
               ;;
             "arm_cortex-a7_neon-vfpv4")
               TARGET="bcm27xx/bcm2709"
-              SDK_PREFIX="bcm27xx-bcm2709"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-bcm27xx-bcm2709_gcc-${GCC_VERSION}_musl_eabi.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-bcm27xx-bcm2709_gcc-${GCC_VERSION}_musl_eabi.Linux-x86_64"
+              fi
               ;;
             "aarch64_cortex-a53")
               TARGET="bcm27xx/bcm2710"
-              SDK_PREFIX="bcm27xx-bcm2710"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-bcm27xx-bcm2710_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-bcm27xx-bcm2710_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
               ;;
             "aarch64_cortex-a72")
               TARGET="bcm27xx/bcm2711"
-              SDK_PREFIX="bcm27xx-bcm2711"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-bcm27xx-bcm2711_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-bcm27xx-bcm2711_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
               ;;
             "aarch64_generic")
               TARGET="rockchip/armv8"
-              SDK_PREFIX="rockchip-armv8"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-rockchip-armv8_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-rockchip-armv8_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
               ;;
           esac
-
-          # 🔗 Build SDK name and URL
-          if [[ "$RELEASE" == "SNAPSHOT" ]]; then
-            SDK_NAME="openwrt-sdk-${SDK_PREFIX}_gcc-${GCC_VERSION}_musl"
-            [[ "$ARCH" == "arm_cortex-a7_neon-vfpv4" ]] && SDK_NAME="${SDK_NAME}_eabi"
-            SDK_NAME="${SDK_NAME}.Linux-x86_64"
-          else
-            SDK_NAME="openwrt-sdk-${RELEASE}-${SDK_PREFIX}_gcc-${GCC_VERSION}_musl"
-            [[ "$ARCH" == "arm_cortex-a7_neon-vfpv4" ]] && SDK_NAME="${SDK_NAME}_eabi"
-            SDK_NAME="${SDK_NAME}.Linux-x86_64"
-          fi
 
           SDK_URL="https://downloads.openwrt.org/${URL_PATH}/${TARGET}/${SDK_NAME}.${FILE_EXT}"
 
           echo "🌐 Downloading SDK from: $SDK_URL"
+          echo "🏗️ Target: $TARGET | Architecture: $ARCH"
+          echo "📦 SDK Name: $SDK_NAME"
           wget -q "$SDK_URL" -O "$SDK_CACHE_DIR/sdk.${FILE_EXT}"
 
           echo "📂 Extracting SDK..."
@@ -277,6 +294,7 @@ jobs:
           echo "📦 Packages: ${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
           echo "🏗️ Architecture: ${{ matrix.arch }}"
           echo "📋 Release: ${{ matrix.release }}"
+          echo "🔍 SDK Path: ${{ env.SDK_PATH }}"
 
       # 📁 Create artifact directory
       - name: 📁 Prepare Artifact Directory
@@ -348,6 +366,17 @@ jobs:
           echo "::group::🏗️ Starting package compilation"
           cd $SDK_PATH
           
+          # 🔍 Verify SDK architecture
+          echo "🔍 Verifying SDK architecture configuration:"
+          echo "Target Architecture: ${{ matrix.arch }}"
+          echo "SDK Path: $(pwd)"
+          
+          # Check .config for architecture
+          if [ -f ".config" ]; then
+            echo "📋 Current .config architecture settings:"
+            grep -E "CONFIG_TARGET_|CONFIG_ARCH" .config || echo "No specific arch config found"
+          fi
+          
           # 🔍 Set verbosity level
           case "${{ inputs.verbose }}" in
             "1") V="V=s" ;;
@@ -378,37 +407,42 @@ jobs:
           # 🔨 Build process
           if [ -n "$PACKAGES" ]; then
             for PKG in $PACKAGES; do
-              echo "::group::🔨 Building package: $PKG"
+              echo "::group::🔨 Building package: $PKG for ${{ matrix.arch }}"
               ./scripts/feeds install -p "$FEEDNAME" -f "$PKG" || true
               
               if make -f .config -f tmp/.packagedeps -f <(echo "\$(info \$(sort \$(package-y) \$(package-m)))"; echo -en "a:\n\t@:") 2>/dev/null | tr ' ' '\n' | grep -qE "(^|/)$PKG$"; then
-                echo "🏗️ Compiling $PKG..."
+                echo "🏗️ Compiling $PKG for architecture ${{ matrix.arch }}..."
                 if make package/$PKG/compile $V -j$(nproc); then
-                  echo "✅ Successfully built $PKG"
-                  find bin/packages/ -name "*$PKG*" -type f 2>/dev/null || echo "ℹ️ No package files found for $PKG"
+                  echo "✅ Successfully built $PKG for ${{ matrix.arch }}"
+                  # Verify package architecture
+                  find bin/packages/ -name "*$PKG*" -type f -exec basename {} \; 2>/dev/null | head -5 || echo "ℹ️ No package files found for $PKG"
                 else
-                  echo "❌ Failed to build package: $PKG"
+                  echo "❌ Failed to build package: $PKG for ${{ matrix.arch }}"
                   RET=1
                 fi
               else
-                echo "⚠️ Skipping $PKG (unsupported architecture or package not found)"
+                echo "⚠️ Skipping $PKG (unsupported architecture ${{ matrix.arch }} or package not found)"
               fi
               echo "::endgroup::"
             done
           else
-            echo "🏗️ Building all custom packages"
+            echo "🏗️ Building all custom packages for ${{ matrix.arch }}"
             ./scripts/feeds install -p "$FEEDNAME" -f -a
             make package/compile $V -j$(nproc) || RET=$?
           fi
           
-          echo "::group::📊 Build Results Summary"
+          echo "::group::📊 Build Results Summary for ${{ matrix.arch }}"
           echo "📦 Packages in bin/packages/:"
           find bin/packages/ -name "*.ipk" -o -name "*.apk" 2>/dev/null | head -20 || echo "ℹ️ No packages found"
+          
+          # Check if packages are in correct architecture directory
+          echo "🔍 Checking architecture-specific directory:"
+          ls -la bin/packages/ 2>/dev/null || echo "No bin/packages directory"
           echo "::endgroup::"
           
           # 📇 Create package index
           if [ "$RET" -eq 0 ]; then
-            echo "::group::📇 Creating package index"
+            echo "::group::📇 Creating package index for ${{ matrix.arch }}"
             if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
               make package/index -j1 V=s CONFIG_SIGNED_PACKAGES=n || echo "⚠️ APK package index creation failed"
             else
