@@ -1,1 +1,0 @@
-{"architecture": "mips_24kc", "packages":{"3ginfo-lite": "20250327-1", "3ginfo-old": "20250327-1", "3ginfo-qmisignal": "20250327-1", "3ginfo-text-old": "20250327-1", "3ginfo-text": "20250327-1", "3ginfo": "20250327-1", "atinout": "0.9.1", "internet-detector": "1.5.1-15", "luci-app-internet-detector": "1.5.1", "luci-i18n-internet-detector-ru": "git-25.177.38880-6636649"}}
