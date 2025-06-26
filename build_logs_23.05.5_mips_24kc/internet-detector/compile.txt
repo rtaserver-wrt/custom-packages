@@ -1,2 +1,0 @@
-Packaged contents of /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/internet-detector-1.5.1/ipkg-all/internet-detector into /home/runner/work/custom-packages/custom-packages/openwrt-sdk/bin/packages/mips_24kc/custom/internet-detector_1.5.1-15_all.ipk
-time: package/feeds/custom/internet-detector/compile#0.28#0.51#0.66

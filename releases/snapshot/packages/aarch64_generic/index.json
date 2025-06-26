@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "architecture": "aarch64_cortex-a53",
+  "architecture": "aarch64_generic",
   "packages": {
     "atinout": "0.9.1",
     "internet-detector": "1.5.1-r15",
