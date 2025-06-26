@@ -1,9 +1,0 @@
-Checking 'python3-pyelftools'... failed.
-Checking 'python3-dev'... ok.
-Checking 'python3-setuptools'... ok.
-Checking 'swig'... ok.
-
-u-boot: Please install the Python3 elftools module
-
-make[4]: *** [/home/runner/work/custom-packages/custom-packages/openwrt-sdk/include/prereq.mk:9: prereq] Error 1
-time: package/feeds/base/uboot-rockchip/nanopi-r4s-rk3399/prereq#1.00#1.28#1.80

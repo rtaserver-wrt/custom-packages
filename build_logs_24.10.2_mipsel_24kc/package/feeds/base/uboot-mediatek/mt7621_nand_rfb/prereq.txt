@@ -1,4 +1,0 @@
-Checking 'python3-dev'... ok.
-Checking 'python3-setuptools'... ok.
-Checking 'swig'... ok.
-time: package/feeds/base/uboot-mediatek/mt7621_nand_rfb/prereq#0.90#1.21#2.42

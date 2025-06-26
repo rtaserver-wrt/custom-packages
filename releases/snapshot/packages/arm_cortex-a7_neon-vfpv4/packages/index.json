@@ -1,8 +1,0 @@
-{
-  "version": 2,
-  "architecture": "arm_cortex-a7_neon-vfpv4",
-  "packages": {
-    "lua-bit32": "5.3.0-r1",
-    "luaposix": "36.3-r1"
-  }
-}

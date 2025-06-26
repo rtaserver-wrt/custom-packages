@@ -1,4 +1,0 @@
-Checking 'python3-dev'... ok.
-Checking 'python3-setuptools'... ok.
-Checking 'swig'... ok.
-time: package/feeds/base/uboot-ath79/qca9558_nec_aterm/prereq#0.78#1.04#1.51

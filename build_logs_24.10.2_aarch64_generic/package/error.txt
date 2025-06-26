@@ -1,4 +1,0 @@
-   ERROR: package/feeds/packages/perl failed to build.
-   ERROR: package/feeds/base/uboot-rockchip failed to build (build variant: nanopi-r4s-rk3399).
-   ERROR: package/feeds/packages/perl failed to build.
-   ERROR: package/feeds/base/uboot-rockchip failed to build (build variant: nanopi-r4s-rk3399).

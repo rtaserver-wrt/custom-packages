@@ -1,5 +1,0 @@
-Checking 'python3-pyelftools'... failed.
-Checking 'python3-dev'... ok.
-Checking 'python3-setuptools'... ok.
-Checking 'swig'... ok.
-time: package/feeds/base/uboot-rockchip/nanopc-t4-rk3399/prereq#1.09#1.33#1.94
