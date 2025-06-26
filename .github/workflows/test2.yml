@@ -1,4 +1,7 @@
-name: OpenWrt Package AutoCompiler
+#
+# Copyright (C) 2025 nosignals
+#
+name: AutoCompiler OpenWrt Packages
 
 on:
   workflow_run:
@@ -6,135 +9,313 @@ on:
     types: [completed]
   push:
     branches: [main]
-    paths-ignore: 
+    paths-ignore:
       - '.github/workflows/**'
       - 'README.md'
   workflow_dispatch:
     inputs:
       compile_pkg:
-        description: 'Package(s) to compile (default: all)'
+        description: 'Specific packages to compile (leave empty for all)'
         required: false
+        type: string
       verbose:
-        description: 'Verbosity level'
-        type: choice
-        options: [0, 1, 2]
+        description: 'Build verbosity'
+        required: false
         default: '0'
+        type: choice
+        options: ['0', '1', '2']
       without_pages:
-        description: 'Skip pages deployment'
-        type: boolean
+        description: 'Skip GitHub Pages deployment'
+        required: false
         default: false
+        type: boolean
 
 permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write
 
 env:
-  SDK_VERSION: ubuntu-22.04
-  RUBY_VERSION: '3.1'
+  RELEASES: "SNAPSHOT 24.10.2 23.05.5"
+  ARCHITECTURES: "x86_64 mips_24kc mipsel_24kc arm_cortex-a7_neon-vfpv4 aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic"
 
 jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    outputs:
+      packages: ${{ steps.get_packages.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get Package List
+        id: get_packages
+        run: |
+          if [ -n "${{ inputs.compile_pkg }}" ]; then
+            echo "packages=${{ inputs.compile_pkg }}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          packages=""
+          for feed_dir in feeds/packages feeds/luci; do
+            if [ -d "$feed_dir" ]; then
+              found=$(find "$feed_dir" -mindepth 1 -maxdepth 2 -name "Makefile" -exec dirname {} \; | xargs -I{} basename {} | sort -u | tr '\n' ' ')
+              packages="$packages $found"
+            fi
+          done
+          
+          packages=$(echo $packages | xargs -n1 | sort -u | xargs)
+          echo "Found packages: $packages"
+          echo "packages=$packages" >> $GITHUB_OUTPUT
+
   build:
-    name: Build Packages
-    runs-on: ${{ env.SDK_VERSION }}
+    needs: prepare
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         release: [SNAPSHOT, 24.10.2, 23.05.5]
-        arch: [
-          x86_64, mips_24kc, mipsel_24kc, 
-          arm_cortex-a7_neon-vfpv4, aarch64_cortex-a53,
-          aarch64_cortex-a72, aarch64_generic
-        ]
+        arch: [x86_64, mips_24kc, mipsel_24kc, arm_cortex-a7_neon-vfpv4, aarch64_cortex-a53, aarch64_cortex-a72, aarch64_generic]
     
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      
+      - name: Setup Environment
+        run: |
+          # Clean up space
+          sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d /usr/local/lib/android
+          
+          # Install dependencies
+          sudo apt-get -qq update
+          sudo apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+            gettext git libncurses-dev libssl-dev python3-distutils python3-setuptools python3-pyelftools \
+            rsync swig unzip zlib1g-dev file wget
+          sudo apt-get -qq autoremove --purge && sudo apt-get -qq clean
 
-    - name: Setup Build Environment
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq \
-          build-essential clang flex bison g++ gawk \
-          git libncurses-dev libssl-dev python3 rsync unzip
-        sudo apt-get clean
+      - name: Download OpenWrt SDK
+        run: |
+          # SDK configuration mapping
+          declare -A sdk_config=(
+            ["SNAPSHOT,x86_64"]="snapshots/targets/x86/64/openwrt-sdk-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
+            ["SNAPSHOT,mips_24kc"]="snapshots/targets/ath79/generic/openwrt-sdk-ath79-generic_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
+            ["SNAPSHOT,mipsel_24kc"]="snapshots/targets/ramips/mt7621/openwrt-sdk-ramips-mt7621_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
+            ["SNAPSHOT,arm_cortex-a7_neon-vfpv4"]="snapshots/targets/bcm27xx/bcm2709/openwrt-sdk-bcm27xx-bcm2709_gcc-14.3.0_musl_eabi.Linux-x86_64.tar.zst"
+            ["SNAPSHOT,aarch64_cortex-a53"]="snapshots/targets/bcm27xx/bcm2710/openwrt-sdk-bcm27xx-bcm2710_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
+            ["SNAPSHOT,aarch64_cortex-a72"]="snapshots/targets/bcm27xx/bcm2711/openwrt-sdk-bcm27xx-bcm2711_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
+            ["SNAPSHOT,aarch64_generic"]="snapshots/targets/rockchip/armv8/openwrt-sdk-rockchip-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
+            ["24.10.2,x86_64"]="releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst"
+            ["24.10.2,mips_24kc"]="releases/24.10.2/targets/ath79/generic/openwrt-sdk-24.10.2-ath79-generic_gcc-13.3.0_musl.Linux-x86_64.tar.zst"
+            ["24.10.2,mipsel_24kc"]="releases/24.10.2/targets/ramips/mt7621/openwrt-sdk-24.10.2-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64.tar.zst"
+            ["24.10.2,arm_cortex-a7_neon-vfpv4"]="releases/24.10.2/targets/bcm27xx/bcm2709/openwrt-sdk-24.10.2-bcm27xx-bcm2709_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst"
+            ["24.10.2,aarch64_cortex-a53"]="releases/24.10.2/targets/bcm27xx/bcm2710/openwrt-sdk-24.10.2-bcm27xx-bcm2710_gcc-13.3.0_musl.Linux-x86_64.tar.zst"
+            ["24.10.2,aarch64_cortex-a72"]="releases/24.10.2/targets/bcm27xx/bcm2711/openwrt-sdk-24.10.2-bcm27xx-bcm2711_gcc-13.3.0_musl.Linux-x86_64.tar.zst"
+            ["24.10.2,aarch64_generic"]="releases/24.10.2/targets/rockchip/armv8/openwrt-sdk-24.10.2-rockchip-armv8_gcc-13.3.0_musl.Linux-x86_64.tar.zst"
+            ["23.05.5,x86_64"]="releases/23.05.5/targets/x86/64/openwrt-sdk-23.05.5-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+            ["23.05.5,mips_24kc"]="releases/23.05.5/targets/ath79/generic/openwrt-sdk-23.05.5-ath79-generic_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+            ["23.05.5,mipsel_24kc"]="releases/23.05.5/targets/ramips/mt7621/openwrt-sdk-23.05.5-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+            ["23.05.5,arm_cortex-a7_neon-vfpv4"]="releases/23.05.5/targets/bcm27xx/bcm2709/openwrt-sdk-23.05.5-bcm27xx-bcm2709_gcc-12.3.0_musl_eabi.Linux-x86_64.tar.xz"
+            ["23.05.5,aarch64_cortex-a53"]="releases/23.05.5/targets/bcm27xx/bcm2710/openwrt-sdk-23.05.5-bcm27xx-bcm2710_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+            ["23.05.5,aarch64_cortex-a72"]="releases/23.05.5/targets/bcm27xx/bcm2711/openwrt-sdk-23.05.5-bcm27xx-bcm2711_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+            ["23.05.5,aarch64_generic"]="releases/23.05.5/targets/rockchip/armv8/openwrt-sdk-23.05.5-rockchip-armv8_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+          )
+          
+          sdk_path="${sdk_config[${{ matrix.release }},${{ matrix.arch }}]}"
+          sdk_url="https://downloads.openwrt.org/${sdk_path}"
+          sdk_file=$(basename "$sdk_path")
+          
+          echo "Downloading: $sdk_url"
+          wget -q "$sdk_url" -O "$sdk_file"
+          
+          # Extract based on file extension
+          if [[ "$sdk_file" == *.tar.zst ]]; then
+            tar --use-compress-program=zstd -xf "$sdk_file" || { zstd -d "$sdk_file" -o sdk.tar && tar -xf sdk.tar; }
+          else
+            tar -xf "$sdk_file"
+          fi
+          
+          # Find and rename SDK directory
+          sdk_dir=$(find . -maxdepth 1 -name "openwrt-sdk-*" -type d | head -1)
+          mv "$sdk_dir" openwrt-sdk
+          echo "SDK_PATH=$(pwd)/openwrt-sdk" >> $GITHUB_ENV
 
-    - name: Get Package List
-      id: packages
-      run: |
-        find feeds/ -mindepth 2 -maxdepth 2 -type f -name Makefile -exec dirname {} \; \
-          | xargs -n1 basename \
-          | sort -u \
-          | tr '\n' ' ' > pkglist.txt
-        echo "list=$(cat pkglist.txt)" >> $GITHUB_OUTPUT
+      - name: Configure SDK
+        run: |
+          cd $SDK_PATH
+          
+          # Setup feeds
+          echo "src-link custom ${{ github.workspace }}/feeds/" >> feeds.conf
+          
+          # Update feeds
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          
+          # Copy additional packages if exist
+          [ -d "${{ github.workspace }}/package" ] && cp -r ${{ github.workspace }}/package/* ./package/ 2>/dev/null || true
+          
+          # Configure
+          make defconfig
+          echo "CONFIG_SIGNED_PACKAGES=n" >> .config
+          make defconfig
 
-    - name: Setup OpenWrt SDK
-      uses: docker://openwrtorg/sdk:${{ matrix.release }}-${{ matrix.arch }}
-      with:
-        entrypoint: /bin/bash
-        args: -c "cp -r /sdk $GITHUB_WORKSPACE/sdk"
+      - name: Build Packages
+        run: |
+          cd $SDK_PATH
+          
+          # Set verbosity
+          case "${{ inputs.verbose }}" in
+            "1") V="V=s" ;;
+            "2") V="V=sc" ;;
+            *) V="" ;;
+          esac
+          
+          export BUILD_LOG=1 CONFIG_SIGNED_PACKAGES=n FEEDNAME="custom"
+          
+          packages="${{ needs.prepare.outputs.packages }}"
+          if [ -n "$packages" ]; then
+            echo "Building packages: $packages"
+            for pkg in $packages; do
+              ./scripts/feeds install -p custom -f "$pkg" 2>/dev/null || true
+              make package/$pkg/compile $V -j$(nproc) || echo "Failed: $pkg"
+            done
+          else
+            ./scripts/feeds install -p custom -f -a
+            make package/compile $V -j$(nproc)
+          fi
+          
+          # Create package index
+          make package/index -j1 V=s CONFIG_SIGNED_PACKAGES=n || {
+            cd bin/packages/${{ matrix.arch }}/custom 2>/dev/null && {
+              if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
+                find . -name "*.apk" -exec basename {} \; > APKINDEX.txt 2>/dev/null || true
+              else
+                ../../../scripts/ipkg-make-index.sh . > Packages 2>/dev/null && gzip -c Packages > Packages.gz || true
+              fi
+            } || true
+          }
 
-    - name: Build Packages
-      run: |
-        cd sdk
-        ./scripts/feeds update
-        ./scripts/feeds install -a
-        make defconfig
-        echo "CONFIG_SIGNED_PACKAGES=n" >> .config
-        make package/compile -j$(nproc)
+      - name: Collect Artifacts
+        if: always()
+        run: |
+          cd $SDK_PATH
+          mkdir -p ${{ github.workspace }}/artifacts/packages/${{ matrix.arch }}
+          
+          # Copy packages
+          if [ -d "bin/packages/${{ matrix.arch }}/custom" ]; then
+            cp -r bin/packages/${{ matrix.arch }}/custom/* ${{ github.workspace }}/artifacts/packages/${{ matrix.arch }}/ 2>/dev/null || true
+          fi
+          
+          # Show results
+          pkg_ext=$( [ "${{ matrix.release }}" = "SNAPSHOT" ] && echo "*.apk" || echo "*.ipk" )
+          pkg_count=$(find ${{ github.workspace }}/artifacts -name "$pkg_ext" | wc -l)
+          echo "Built $pkg_count packages"
 
-    - name: Collect Artifacts
-      run: |
-        mkdir -p artifacts/${{ matrix.arch }}
-        find sdk/bin -name '*.ipk' -or -name '*.apk' -exec cp {} artifacts/${{ matrix.arch }} \;
+      - name: Upload Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages_${{ matrix.release }}_${{ matrix.arch }}
+          path: ${{ github.workspace }}/artifacts/packages/${{ matrix.arch }}/*
+          retention-days: 30
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: packages-${{ matrix.release }}-${{ matrix.arch }}
-        path: artifacts/${{ matrix.arch }}
+      - name: Upload Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs_${{ matrix.release }}_${{ matrix.arch }}
+          path: ${{ env.SDK_PATH }}/logs/**/*.log
+          retention-days: 7
 
   deploy:
     needs: build
-    runs-on: ${{ env.SDK_VERSION }}
+    if: always()
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
-    - name: Checkout Pages
-      uses: actions/checkout@v4
-      with:
-        ref: 'gh-pages'
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: packages_*
+          merge-multiple: true
+          path: packages/
 
-    - name: Download Artifacts
-      uses: actions/download-artifact@v4
+      - name: Organize Packages
+        run: |
+          mkdir -p releases
+          for release in ${{ env.RELEASES }}; do
+            version=$( [ "$release" = "SNAPSHOT" ] && echo "snapshot" || echo "${release%.*}" )
+            for arch in ${{ env.ARCHITECTURES }}; do
+              src_dir="packages_${release}_${arch}"
+              if [ -d "packages/$src_dir" ]; then
+                dest_dir="releases/$version/packages/$arch"
+                mkdir -p "$dest_dir"
+                cp -rf "packages/$src_dir"/* "$dest_dir/"
+                rm -rf "$dest_dir"/{routing,telephony} 2>/dev/null || true
+              fi
+            done
+          done
+          rm -rf packages/
 
-    - name: Organize Packages
-      run: |
-        for artifact in *; do
-          [[ $artifact =~ packages-(.*)-(.*) ]] || continue
-          mkdir -p releases/${BASH_REMATCH[1]}/${BASH_REMATCH[2]}
-          cp -r $artifact/* releases/${BASH_REMATCH[1]}/${BASH_REMATCH[2]}
-        done
-
-    - name: Publish Packages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./releases
+      - name: Commit Changes
+        run: |
+          git config --local user.name "GitHub Action"
+          git config --local user.email "actions@users.noreply.github.com"
+          git add .
+          if ! git diff --staged --quiet; then
+            git commit -m "Update packages - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            git push
+          fi
 
   pages:
     needs: deploy
-    if: ${{ !inputs.without_pages }}
-    runs-on: ${{ env.SDK_VERSION }}
+    if: ${{ !inputs.without_pages && !cancelled() }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-    - name: Setup Jekyll
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ${{ env.RUBY_VERSION }}
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          lfs: true
+          submodules: true
+          
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          
+      - name: Pre-build Setup
+        run: |
+          [ -f "./prenodes.sh" ] && chmod +x ./prenodes.sh && SERVER_HOME=releases ./prenodes.sh || true
+        
+      - uses: actions/configure-pages@v5
+        id: pages
+        
+      - name: Build Jekyll
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: production
+          
+      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/deploy-pages@v4
+        id: deployment
 
-    - name: Build Site
-      run: |
-        gem install jekyll bundler
-        jekyll build --destination ./dist
-
-    - name: Deploy Pages
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: ./dist
+  cleanup:
+    needs: [deploy]
+    if: always()
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: write
+    steps:
+      - uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 5
+          keep_minimum_runs: 2
