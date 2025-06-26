@@ -104,6 +104,10 @@ jobs:
           # 🐍 Python dependencies
           sudo pip3 install --upgrade pip
           sudo pip3 install meson ninja
+
+          # 🧹 Clean APT cache to prevent permission issues
+          sudo rm -rf /var/cache/apt/archives/lock
+          sudo rm -rf /var/cache/apt/archives/partial/*
           echo "::endgroup::"
 
       # 📁 Prepare SDK cache
@@ -467,9 +471,8 @@ jobs:
           
           # 📦 Copy packages from the correct architecture directory
           echo "📦 Copying all packages from architecture directory bin/packages/${{ matrix.arch }}"
-          if [ -d "./bin/packages/${{ matrix.arch }}" ]; then
-              # Use 'cp -a' to copy all contents including subdirectories like 'base', 'luci', 'custom'
-              cp -a ./bin/packages/${{ matrix.arch }}/. $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/
+          if [ -d "./bin/packages/${{ matrix.arch }}/custom" ]; then
+              cp -r ./bin/packages/${{ matrix.arch }}/custom/* $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/
           else
               echo "ℹ️ No package directory found for architecture ${{ matrix.arch }}"
           fi
