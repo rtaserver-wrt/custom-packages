@@ -75,8 +75,10 @@ jobs:
       - name: '📦 Cache APT packages'
         uses: actions/cache@v3
         with:
-          path: /var/cache/apt
-          key: ${{ runner.os }}-apt-${{ hashFiles('**/package-lock.json') }}
+          path: |
+            /var/cache/apt/archives/*.deb
+            /var/cache/apt/*.bin
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/test2.yml') }}
           restore-keys: |
             ${{ runner.os }}-apt-
 
@@ -91,8 +93,7 @@ jobs:
           sudo pip3 install --upgrade pip
           sudo pip3 install meson ninja
 
-          sudo rm -rf /var/cache/apt/archives/lock
-          sudo rm -rf /var/cache/apt/archives/partial/*
+          sudo apt-get clean
           echo "::endgroup::"
 
       - name: '📂 Prepare SDK Cache'
@@ -295,6 +296,8 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/package" ]; then
             echo "📦 Copying root package directory..."
             cp -rv "$GITHUB_WORKSPACE/package/"* "./package/" 2>/dev/null || true
+            echo "📂 Custom packages copied to SDK"
+            ls -l "./package/"
           fi
           echo "::endgroup::"
 
@@ -426,7 +429,7 @@ jobs:
       - name: '📦 Upload Packages'
         uses: actions/upload-artifact@v4
         with:
-          name: "📦 openwrt_${{ matrix.release }}_${{ matrix.arch }}"
+          name: "openwrt_${{ matrix.release }}_${{ matrix.arch }}"
           path: ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/*
           retention-days: 30
 
@@ -434,7 +437,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: "📋 build_logs_${{ matrix.release }}_${{ matrix.arch }}"
+          name: "build_logs_${{ matrix.release }}_${{ matrix.arch }}"
           path: ${{ github.workspace }}/artifacts/logs/*
           retention-days: 7
 
