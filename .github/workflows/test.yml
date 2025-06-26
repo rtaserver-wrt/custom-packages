@@ -335,7 +335,7 @@ jobs:
           SDK_DOWNLOAD_URL="${FULL_URL}/${SDK_FILE}"
 
           echo "🌐 Downloading: $SDK_DOWNLOAD_URL"
-          wget -O sdk.tar.${SDK_EXT} "$SDK_DOWNLOAD_URL"
+          wget -O sdk.${SDK_EXT} "$SDK_DOWNLOAD_URL"
 
           echo "📂 Extracting SDK..."
           if [[ "$SDK_EXT" == "tar.zst" ]]; then
