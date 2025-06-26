@@ -1,0 +1,66 @@
+# Copyright (C) 2025 rtaserver-wrt
+#
+name: Deploy to GitHub Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: auto-compiler-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_deploy_pages:
+    name: 🌐 Deploy to GitHub Pages
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 🚀 Checkout gh-pages Branch
+        uses: actions/checkout@v4
+        with:
+          ref: 'gh-pages'
+          submodules: true
+
+      - name: 💎 Setup Ruby and Jekyll
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+
+      - name: 📜 Run Pre-build Script
+        env:
+          SERVER_HOME: releases
+        run: |
+          if [ -f "./prenodes.sh" ]; then
+            echo "Running prenodes.sh..."
+            chmod +x ./prenodes.sh
+            ./prenodes.sh
+          else
+            echo "prenodes.sh not found, skipping."
+          fi
+
+      - name: 🛠️ Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: 🏗️ Build with Jekyll
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: production
+
+      - name: 📤 Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
