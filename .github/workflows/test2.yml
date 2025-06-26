@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2024 nosignals
+# Copyright (C) 2025 nosignals
 #
 name: AutoCompiler OpenWrt Packages
 
@@ -28,7 +28,11 @@ on:
         description: 'Verbose (default : 0)'
         required: false
         default: '0'
-        type: string
+        type: choice
+        options:
+          - '0'
+          - '1'
+          - '2'
         
       without_pages:
         description: 'Dont deploy pages'
@@ -52,7 +56,7 @@ jobs:
       matrix:
         release:
           - SNAPSHOT
-          - 24.10.5
+          - 24.10.2
           - 23.05.5
         arch:
           - x86_64
@@ -70,7 +74,7 @@ jobs:
           ref: main
 
       - name: 📋 Read Package List
-        if: inputs.compile_pkg == ''
+        if: ${{ inputs.compile_pkg == '' }}
         id: list_package
         run: |
           echo "::group::📋 Reading package list"
@@ -134,8 +138,8 @@ jobs:
             URL_PATH="snapshots/targets"
             GCC_VERSION="14.3.0"
             FILE_EXT="tar.zst"
-          elif [[ "$RELEASE" == "24.10.5" ]]; then
-            URL_PATH="releases/24.10.5/targets"
+          elif [[ "$RELEASE" == "24.10.2" ]]; then
+            URL_PATH="releases/24.10.2/targets"
             GCC_VERSION="13.3.0"
             FILE_EXT="tar.zst"
           elif [[ "$RELEASE" == "23.05.5" ]]; then
@@ -211,8 +215,12 @@ jobs:
           
           echo "Extracting SDK..."
           if [[ "$FILE_EXT" == "tar.zst" ]]; then
-            zstd -d "sdk.${FILE_EXT}" -o sdk.tar
-            tar -xf sdk.tar
+            if command -v tar &> /dev/null && tar --use-compress-program=unzstd -tf sdk.tar.zst; then
+              tar --use-compress-program=unzstd -xf sdk.tar.zst
+            else
+              zstd -d "sdk.${FILE_EXT}" -o sdk.tar
+              tar -xf sdk.tar
+            fi
           else
             tar -xf "sdk.${FILE_EXT}"
           fi
@@ -220,7 +228,7 @@ jobs:
           mv ${SDK_NAME} openwrt-sdk
           
           echo "SDK_PATH=$(pwd)/openwrt-sdk" >> $GITHUB_ENV
-          echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "ARCH=${ARCH}" >> $GITHUB_ENV
 
       - name: Setup SDK Feeds
         run: |
@@ -300,12 +308,16 @@ jobs:
           
           # Set verbose mode
           if [ "${{ inputs.verbose }}" = "1" ]; then
-            export V=s
+            V="V=s"
+          elif [ "${{ inputs.verbose }}" = "2" ]; then
+            V="V=sc"
+          else
+            V=""
           fi
           
           # Get packages to compile
           PACKAGES="${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
-          PACKAGES=$(echo $PACKAGES | tr -d '\n\r' | xargs)
+          PACKAGES=$(echo $PACKAGES | xargs)
           
           echo "Building packages: $PACKAGES"
           
@@ -313,18 +325,18 @@ jobs:
           if [ -n "$PACKAGES" ]; then
             for pkg in $PACKAGES; do
               echo "Building package: $pkg"
-              make package/$pkg/compile V=$V || {
+              make package/$pkg/compile $V || {
                 echo "Failed to build package: $pkg"
                 continue
               }
             done
           else
-            echo "No packages specified, building all available packages"
-            make package/compile V=$V
+            echo "No packages specified, building all"
+            make package/compile $V
           fi
           
           # Create package index
-          make package/index V=$V
+          make package/index $V
 
       - name: Copy Built Packages
         run: |
@@ -370,7 +382,7 @@ jobs:
         run: |
           # rm -rf releases/*
           mkdir -p releases 2>/dev/null
-          version=( SNAPSHOT 24.10.5 23.05.5 )
+          version=( SNAPSHOT 24.10.2 23.05.5 )
           archi=( x86_64 mips_24kc mipsel_24kc arm_cortex-a7_neon-vfpv4 aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic )
           for vr in ${version[*]} 
             do
