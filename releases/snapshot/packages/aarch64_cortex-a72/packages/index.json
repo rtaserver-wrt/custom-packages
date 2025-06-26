@@ -1,8 +1,0 @@
-{
-  "version": 2,
-  "architecture": "aarch64_cortex-a72",
-  "packages": {
-    "lua-bit32": "5.3.0-r1",
-    "luaposix": "36.3-r1"
-  }
-}
