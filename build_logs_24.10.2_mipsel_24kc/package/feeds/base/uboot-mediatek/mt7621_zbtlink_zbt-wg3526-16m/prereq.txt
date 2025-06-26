@@ -1,0 +1,4 @@
+Checking 'python3-dev'... ok.
+Checking 'python3-setuptools'... ok.
+Checking 'swig'... ok.
+time: package/feeds/base/uboot-mediatek/mt7621_zbtlink_zbt-wg3526-16m/prereq#0.87#1.14#1.57

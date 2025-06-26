@@ -1,0 +1,149 @@
+make[2]: Entering directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/feeds/packages/lang/luarocks'
+mkdir -p /home/runner/work/custom-packages/custom-packages/openwrt-sdk/dl
+SHELL= flock /home/runner/work/custom-packages/custom-packages/openwrt-sdk/tmp/.luarocks-2.2.2.tar.zst.flock -c '  	/home/runner/work/custom-packages/custom-packages/openwrt-sdk/scripts/download.pl "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/dl" "luarocks-2.2.2.tar.zst" "9b2f880e0ff57a0d7e3a9d8d5365c73e6f546891bc39d2c6ef4c3443a8ca4b45" "" || (  /home/runner/work/custom-packages/custom-packages/openwrt-sdk/scripts/dl_github_archive.py --dl-dir="/home/runner/work/custom-packages/custom-packages/openwrt-sdk/dl" --url="https://github.com/keplerproject/luarocks" --version="v2.2.2" --subdir="luarocks-2.2.2" --source="luarocks-2.2.2.tar.zst" --hash="9b2f880e0ff57a0d7e3a9d8d5365c73e6f546891bc39d2c6ef4c3443a8ca4b45" --submodules  || ( 	echo "Checking out files from the git repository..."; mkdir -p /home/runner/work/custom-packages/custom-packages/openwrt-sdk/tmp/dl && cd /home/runner/work/custom-packages/custom-packages/openwrt-sdk/tmp/dl && rm -rf luarocks-2.2.2 && [ \! -d luarocks-2.2.2 ] && git clone  https://github.com/keplerproject/luarocks luarocks-2.2.2 && (cd luarocks-2.2.2 && git checkout v2.2.2) && export TAR_TIMESTAMP=`cd luarocks-2.2.2 && git log -1 --format='\''@%ct'\''` && echo "Generating formal git archive (apply .gitattributes rules)" && (cd luarocks-2.2.2 && git config core.abbrev 8 && git archive --format=tar HEAD --output=../luarocks-2.2.2.tar.git) && tar --ignore-failed-read -C luarocks-2.2.2 -f luarocks-2.2.2.tar.git -r .git .gitmodules 2>/dev/null && rm -rf luarocks-2.2.2 && mkdir luarocks-2.2.2 && tar -C luarocks-2.2.2 -xf luarocks-2.2.2.tar.git && (cd luarocks-2.2.2 && git submodule update --init --recursive --  && rm -rf .git .gitmodules) && echo "Packing checkout..." && 	tar --numeric-owner --owner=0 --group=0 --mode=a-s --sort=name ${TAR_TIMESTAMP:+--mtime="$TAR_TIMESTAMP"} -c luarocks-2.2.2 | 	zstd -T0 --ultra -20 -c > /home/runner/work/custom-packages/custom-packages/openwrt-sdk/tmp/dl/luarocks-2.2.2.tar.zst && mv /home/runner/work/custom-packages/custom-packages/openwrt-sdk/tmp/dl/luarocks-2.2.2.tar.zst /home/runner/work/custom-packages/custom-packages/openwrt-sdk/dl/ && rm -rf luarocks-2.2.2; );  )    '
++ curl -f --connect-timeout 20 --retry 5 --location https://sources.cdn.openwrt.org/luarocks-2.2.2.tar.zst
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 2666k  100 2666k    0     0  9324k      0 --:--:-- --:--:-- --:--:-- 9357k
+. /home/runner/work/custom-packages/custom-packages/openwrt-sdk/include/shell.sh; zstdcat /home/runner/work/custom-packages/custom-packages/openwrt-sdk/dl/luarocks-2.2.2.tar.zst | tar -C /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2/.. -xf -
+[ ! -d ./src/ ] || cp -fpR ./src/* /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2
+
+Applying /home/runner/work/custom-packages/custom-packages/openwrt-sdk/feeds/packages/lang/luarocks/patches/01_dont_modify_bin_shebang.diff using plaintext: 
+patching file Makefile
+
+Applying /home/runner/work/custom-packages/custom-packages/openwrt-sdk/feeds/packages/lang/luarocks/patches/02_allow_configure_uname_siteconfig_adjustment.patch using plaintext: 
+patching file configure
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2/.preparedbe2fadb3bf25a3019f8ffd3d84c2cade_18f1e190c5d53547fed41a3eaa76e9e9
+(cd /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2/; if [ -x configure ]; then cp -fpR /home/runner/work/custom-packages/custom-packages/openwrt-sdk/scripts/config.{guess,sub} /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2// && LUAROCKS_UNAME_S="Linux" LUAROCKS_UNAME_M="mips"  bash ./configure --prefix=/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host --sysconfdir=/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc --with-lua=/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg ; fi )
+Lua interpreter found: /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/bin/lua...
+Lua version detected: 5.1
+Checking Lua includes... lua.h found in /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/include/lua.h
+curl found at /usr/bin
+md5sum found at /usr/bin
+Configuring for system... Configuring for architecture... Using unversioned rocks dir: /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/lib/luarocks/rocks
+Writing configuration...
+
+Installation prefix: /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host
+LuaRocks configuration directory: /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc
+Using Lua from: /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg
+
+Done configuring.
+- Type 'make build' and 'make install':
+  to install to /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host as usual.
+- Type 'make bootstrap':
+  to install LuaRocks in /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host as a rock.
+
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2/.configured
+CFLAGS="-O2 -I/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/include -I/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/include -I/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/include" CPPFLAGS="-I/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/include -I/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/include -I/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/include" CXXFLAGS="-O2 -I/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/include -I/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/include -I/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/include" LDFLAGS="-L/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/lib -L/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/lib -L/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/lib" make --jobserver-auth=3,4  -C /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2/.  build
+make[3]: Entering directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2'
+rm -f src/luarocks/site_config.lua
+echo 'local site_config = {}' >> src/luarocks/site_config.lua
+if [ -n "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host" ] ;\
+then \
+   echo "site_config.LUAROCKS_PREFIX=[[/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host]]" >> src/luarocks/site_config.lua ;\
+fi
+if [ -n "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/include" ] ;\
+then \
+   echo "site_config.LUA_INCDIR=[[/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/include]]" >> src/luarocks/site_config.lua ;\
+fi
+if [ -n "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/lib" ] ;\
+then \
+   echo "site_config.LUA_LIBDIR=[[/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/lib]]" >> src/luarocks/site_config.lua ;\
+fi
+if [ -n "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/bin" ] ;\
+then \
+   echo "site_config.LUA_BINDIR=[[/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/bin]]" >> src/luarocks/site_config.lua ;\
+fi
+if [ -n "" ] ;\
+then \
+   echo "site_config.LUA_INTERPRETER=[[lua]]" >> src/luarocks/site_config.lua ;\
+fi
+if [ -n "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc" ] ;\
+then \
+   echo "site_config.LUAROCKS_SYSCONFDIR=[[/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc]]" >> src/luarocks/site_config.lua ;\
+fi
+if [ -n "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host" ] ;\
+then \
+   echo "site_config.LUAROCKS_ROCKS_TREE=[[/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host]]" >> src/luarocks/site_config.lua ;\
+fi
+if [ -n "" ] ;\
+then \
+   echo "site_config.LUAROCKS_FORCE_CONFIG=true" >> src/luarocks/site_config.lua ;\
+fi
+if [ -n "/lib/luarocks/rocks" ] ;\
+then \
+   echo "site_config.LUAROCKS_ROCKS_SUBDIR=[[/lib/luarocks/rocks]]" >> src/luarocks/site_config.lua ;\
+fi
+if [ "yes" = "yes" ] ;\
+then \
+   echo "site_config.LUA_DIR_SET=true" >> src/luarocks/site_config.lua ;\
+fi
+echo "site_config.LUAROCKS_UNAME_S=[[Linux]]" >> src/luarocks/site_config.lua
+echo "site_config.LUAROCKS_UNAME_M=[[mips]]" >> src/luarocks/site_config.lua
+echo "site_config.LUAROCKS_DOWNLOADER=[[curl]]" >> src/luarocks/site_config.lua
+echo "site_config.LUAROCKS_MD5CHECKER=[[md5sum]]" >> src/luarocks/site_config.lua
+if [ -n "lib/x86_64-linux-gnu" ] ;\
+then \
+   echo 'site_config.LUAROCKS_EXTERNAL_DEPS_SUBDIRS={ bin="bin", lib={ "lib", [[lib/x86_64-linux-gnu]] }, include="include" }' >> src/luarocks/site_config.lua ;\
+   echo 'site_config.LUAROCKS_RUNTIME_EXTERNAL_DEPS_SUBDIRS={ bin="bin", lib={ "lib", [[lib/x86_64-linux-gnu]] }, include="include" }' >> src/luarocks/site_config.lua ;\
+fi
+echo "return site_config" >> src/luarocks/site_config.lua
+for f in luarocks luarocks-admin ;\
+do \
+   mv src/bin/$f src/bin/$f.bak ;\
+   sed "s,^#!.*lua.*,#!/usr/bin/env lua,;/^package.path/d" < src/bin/$f.bak > src/bin/$f ;\
+   chmod +x src/bin/$f ;\
+   rm -f src/bin/$f.bak ;\
+done
+for f in luarocks luarocks-admin ;\
+do \
+   sed "1d" src/bin/$f > src/bin/$f.bak ;\
+   echo "#!/usr/bin/env lua5.1" > src/bin/$f ;\
+   echo "package.path = [[/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/share/lua/5.1//?.lua;]]..package.path" | sed "s,//,/,g" >> src/bin/$f ;\
+   cat src/bin/$f.bak >> src/bin/$f ;\
+   chmod +x src/bin/$f ;\
+   rm -f src/bin/$f.bak ;\
+done
+
+Done. Type 'make install' to install into /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host.
+
+make[3]: Leaving directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2'
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2/.built
+make -C /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2 install
+make[3]: Entering directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2'
+mkdir -p "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/bin"
+cd src/bin && \
+luaver="5.1" && [ -n "$luaver" ] || luaver=` -e 'print(_VERSION:sub(5))'`; \
+for f in luarocks luarocks-admin; \
+do \
+   cp "$f" "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/bin/$f-$luaver"; \
+   ln -nfs "$f-$luaver" "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/bin/$f"; \
+done
+mkdir -p "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/share/lua/5.1//luarocks"
+cd src/luarocks && for f in fs/unix/tools.lua fs/unix.lua fs/win32/tools.lua fs/win32.lua fs/lua.lua persist.lua list.lua require.lua repos.lua dir.lua make_manifest.lua command_line.lua install.lua build/command.lua build/cmake.lua build/make.lua build/builtin.lua fetch/cvs.lua fetch/git.lua fetch/sscm.lua tools/patch.lua fetch/svn.lua tools/zip.lua tools/tar.lua pack.lua type_check.lua make.lua remove.lua fs.lua manif.lua add.lua deps.lua build.lua search.lua show.lua manif_core.lua fetch.lua unpack.lua validate.lua cfg.lua download.lua help.lua util.lua index.lua cache.lua refresh_cache.lua loader.lua admin_remove.lua fetch/hg.lua fetch/git_file.lua new_version.lua lint.lua purge.lua path.lua path_cmd.lua write_rockspec.lua doc.lua upload.lua upload/api.lua upload/multipart.lua fetch/git_http.lua fetch/hg_http.lua fetch/hg_https.lua fetch/hg_ssh.lua fetch/git_https.lua; \
+do \
+   d="/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/share/lua/5.1//luarocks"/`dirname "$f"` && \
+   mkdir -p "$d" && \
+   cp "$f" "$d" || exit 1; \
+done
+mkdir -p "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/share/lua/5.1//luarocks"
+cp src/luarocks/site_config.lua "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/share/lua/5.1//luarocks"
+mkdir -p "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host"
+if [ ! -f "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc/config-5.1.lua" ] ;\
+then \
+   mkdir -p `dirname "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc/config-5.1.lua"` ;\
+   echo 'rocks_trees = {' >> "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc/config-5.1.lua" ;\
+   if  [ ! -n "" ] ;\
+   then \
+      echo '   { name = [[user]], root = home..[[/.luarocks]] },' >> "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc/config-5.1.lua" ;\
+   fi ;\
+   echo '   { name = [[system]], root = [[/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host]] }' >> "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc/config-5.1.lua" ;\
+   echo '}' >> "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/etc/config-5.1.lua" ;\
+fi
+make[3]: Leaving directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2'
+mkdir -p /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/stamp
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2/.built
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/target-mips_24kc_musl/host/stamp/.luarocks_installed 
+find /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-mips_24kc_musl/host/luarocks-2.2.2 -mindepth 1 -maxdepth 1 -not '(' -type f -and -name '.*' -and -size 0 ')' -print0 | xargs -r -0 rm -rf
+make[2]: Leaving directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/feeds/packages/lang/luarocks'
+time: package/feeds/packages/luarocks/host-compile#0.64#1.14#2.04

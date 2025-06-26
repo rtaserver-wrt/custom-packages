@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "architecture": "mips_24kc",
+  "packages": {
+    "jshn": "2024.12.19~3868f47c-r1",
+    "libblobmsg-json": "2024.12.19~3868f47c-r1",
+    "libjson-c": "0.18-r1",
+    "libjson-script": "2024.12.19~3868f47c-r1",
+    "liblua": "5.1.5-r11",
+    "libubox-lua": "2024.12.19~3868f47c-r1",
+    "libubox": "2024.12.19~3868f47c-r1",
+    "libuci-lua": "2025.01.20~16ff0bad-r1",
+    "libuci": "2025.01.20~16ff0bad-r1",
+    "lua": "5.1.5-r11",
+    "lua-examples": "5.1.5-r11",
+    "luac": "5.1.5-r11",
+    "uci": "2025.01.20~16ff0bad-r1"
+  }
+}

@@ -1,0 +1,161 @@
+make[2]: Entering directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/feeds/base/package/utils/lua'
+mkdir -p /home/runner/work/custom-packages/custom-packages/openwrt-sdk/dl
+SHELL= flock /home/runner/work/custom-packages/custom-packages/openwrt-sdk/tmp/.lua-5.1.5.tar.gz.flock -c '  	/home/runner/work/custom-packages/custom-packages/openwrt-sdk/scripts/download.pl "/home/runner/work/custom-packages/custom-packages/openwrt-sdk/dl" "lua-5.1.5.tar.gz" "2640fc56a795f29d28ef15e13c34a47e223960b0240e8cb0a82d9b0738695333" "" "https://www.lua.org/ftp/" "https://www.tecgraf.puc-rio.br/lua/ftp/"    '
++ curl -f --connect-timeout 20 --retry 5 --location https://www.lua.org/ftp/lua-5.1.5.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 96  216k   96  207k    0     0   152k      0  0:00:01  0:00:01 --:--:--  152k100  216k  100  216k    0     0   158k      0  0:00:01  0:00:01 --:--:--  158k
+. /home/runner/work/custom-packages/custom-packages/openwrt-sdk/include/shell.sh; /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/libdeflate-gzip -dc /home/runner/work/custom-packages/custom-packages/openwrt-sdk/dl/lua-5.1.5.tar.gz | tar -C /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/.. -xf -
+[ ! -d ./src/ ] || cp -fpR ./src/* /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5
+
+Applying ./patches-host/001-include-version-number.patch using plaintext: 
+patching file Makefile
+patching file doc/lua5.1.1 (renamed from doc/lua.1)
+patching file doc/luac5.1.1 (renamed from doc/luac.1)
+patching file src/Makefile
+
+Applying ./patches-host/010-lua-5.1.3-lnum-full-260308.patch using plaintext: 
+patching file Makefile
+patching file src/Makefile
+patching file src/lapi.c
+patching file src/lapi.h
+patching file src/lauxlib.c
+patching file src/lauxlib.h
+patching file src/lbaselib.c
+patching file src/lcode.c
+patching file src/lcode.h
+patching file src/ldebug.c
+patching file src/ldo.c
+patching file src/ldump.c
+patching file src/liolib.c
+patching file src/llex.c
+patching file src/llex.h
+patching file src/llimits.h
+patching file src/lmathlib.c
+patching file src/lnum.c
+patching file src/lnum.h
+patching file src/lnum_config.h
+patching file src/lobject.c
+patching file src/lobject.h
+patching file src/loslib.c
+patching file src/lparser.c
+patching file src/lparser.h
+patching file src/lstrlib.c
+patching file src/ltable.c
+patching file src/ltable.h
+patching file src/ltm.c
+patching file src/lua.c
+patching file src/lua.h
+patching file src/luaconf.h
+patching file src/lundump.c
+patching file src/lvm.c
+patching file src/lvm.h
+patching file src/print.c
+
+Applying ./patches-host/011-lnum-use-double.patch using plaintext: 
+patching file src/lnum_config.h
+
+Applying ./patches-host/012-lnum-fix-ltle-relational-operators.patch using plaintext: 
+patching file src/lvm.c
+
+Applying ./patches-host/013-lnum-strtoul-parsing-fixes.patch using plaintext: 
+patching file src/lnum.c
+patching file src/lnum_config.h
+
+Applying ./patches-host/015-lnum-ppc-compat.patch using plaintext: 
+patching file src/lua.h
+
+Applying ./patches-host/030-archindependent-bytecode.patch using plaintext: 
+patching file src/ldump.c
+patching file src/lundump.c
+
+Applying ./patches-host/100-no_readline.patch using plaintext: 
+patching file src/luaconf.h
+patching file src/Makefile
+
+Applying ./patches-host/400-CVE-2014-5461.patch using plaintext: 
+patching file src/ldo.c
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/.prepared2015f849816264246a21d980f733760d_18f1e190c5d53547fed41a3eaa76e9e9
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/sed -i -e 's,"/usr/local/","/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/",' /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/src/luaconf.h
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/.configured
+make -C /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5 CC="/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99" linux
+make[3]: Entering directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5'
+cd src && make linux V=5.1
+make[4]: Entering directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/src'
+make all MYCFLAGS="-DLUA_USE_LINUX " MYLIBS="-Wl,-E -ldl "
+make[5]: Entering directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/src'
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lapi.o lapi.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lcode.o lcode.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o ldebug.o ldebug.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o ldo.o ldo.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o ldump.o ldump.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lfunc.o lfunc.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lgc.o lgc.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o llex.o llex.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lmem.o lmem.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lobject.o lobject.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lopcodes.o lopcodes.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lparser.o lparser.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lstate.o lstate.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lstring.o lstring.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o ltable.o ltable.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o ltm.o ltm.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lundump.o lundump.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lvm.o lvm.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lzio.o lzio.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lnum.o lnum.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lauxlib.o lauxlib.c
+lauxlib.c: In function 'luaL_loadfile':
+lauxlib.c:587:4: warning: this 'while' clause does not guard... [-Wmisleading-indentation]
+  587 |    while ((c = getc(lf.f)) != EOF && c != LUA_SIGNATURE[0]) ;
+      |    ^~~~~
+lauxlib.c:588:5: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'while'
+  588 |     lf.extraline = 0;
+      |     ^~
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lbaselib.o lbaselib.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o ldblib.o ldblib.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o liolib.o liolib.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lmathlib.o lmathlib.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o loslib.o loslib.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o ltablib.o ltablib.c
+ltablib.c: In function 'addfield':
+ltablib.c:137:3: warning: this 'if' clause does not guard... [-Wmisleading-indentation]
+  137 |   if (!lua_isstring(L, -1))
+      |   ^~
+ltablib.c:140:5: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'if'
+  140 |     luaL_addvalue(b);
+      |     ^~~~~~~~~~~~~
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lstrlib.o lstrlib.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o loadlib.o loadlib.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o linit.o linit.c
+ar rcu liblua.a lapi.o lcode.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o lmem.o lobject.o lopcodes.o lparser.o lstate.o lstring.o ltable.o ltm.o lundump.o lvm.o lzio.o lnum.o lauxlib.o lbaselib.o ldblib.o liolib.o lmathlib.o loslib.o ltablib.o lstrlib.o loadlib.o linit.o	# DLL needs all object files
+ar: `u' modifier ignored since `D' is the default (see `U')
+ranlib liblua.a
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o lua.o lua.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -o lua5.1  lua.o liblua.a -lm -Wl,-E -ldl 
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o luac.o luac.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -O2 -Wall -DLUA_USE_LINUX    -c -o print.o print.c
+/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/host/bin/gcc -DPIC -fPIC -std=gnu99 -o luac5.1  luac.o print.o liblua.a -lm -Wl,-E -ldl 
+make[5]: Leaving directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/src'
+make[4]: Leaving directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/src'
+make[3]: Leaving directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5'
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/.built
+make -C /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5 INSTALL_TOP="/home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg" install
+make[3]: Entering directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5'
+cd src && mkdir -p /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/bin /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/include /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/lib /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/man/man1 /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/share/lua/5.1 /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/lib/lua/5.1
+cd src && install -p -m 0755 lua5.1 luac5.1 /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/bin
+cd src && install -p -m 0644 lua.h luaconf.h lualib.h lauxlib.h lnum_config.h ../etc/lua.hpp /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/include
+cd src && install -p -m 0644 liblua.a /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/lib
+cd doc && install -p -m 0644 lua5.1.1 luac5.1.1 /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/man/man1
+make[3]: Leaving directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5'
+install -d -m0755 /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/lib/pkgconfig
+cp -fpR /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/etc/lua.pc /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/lib/pkgconfig/lua5.1.pc
+ln -sf lua5.1 /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/bin/lua
+ln -sf luac5.1 /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/bin/luac
+ln -sf lua5.1.pc /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/lib/pkgconfig/lua.pc
+mkdir -p /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/stamp
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5/.built
+touch /home/runner/work/custom-packages/custom-packages/openwrt-sdk/staging_dir/hostpkg/stamp/.lua_installed 
+find /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/hostpkg/lua-5.1.5 -mindepth 1 -maxdepth 1 -not '(' -type f -and -name '.*' -and -size 0 ')' -print0 | xargs -r -0 rm -rf
+make[2]: Leaving directory '/home/runner/work/custom-packages/custom-packages/openwrt-sdk/feeds/base/package/utils/lua'
+time: package/feeds/base/lua/host-compile#5.17#1.22#12.58

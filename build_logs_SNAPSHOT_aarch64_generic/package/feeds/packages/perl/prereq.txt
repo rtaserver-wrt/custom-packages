@@ -1,0 +1,6 @@
+Checking 'rsync'... ok.
+
+u-boot: Please install the Python3 elftools module
+
+make[4]: *** [/home/runner/work/custom-packages/custom-packages/openwrt-sdk/include/prereq.mk:9: prereq] Error 1
+time: package/feeds/packages/perl/prereq#0.49#0.68#0.91

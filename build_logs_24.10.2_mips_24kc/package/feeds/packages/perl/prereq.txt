@@ -1,0 +1,2 @@
+Checking 'rsync'... ok.
+time: package/feeds/packages/perl/prereq#0.48#0.67#0.88
