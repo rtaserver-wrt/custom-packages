@@ -226,6 +226,7 @@ jobs:
           echo "::group::📋 Reading package list"
           _packages=""
           _luci=""
+          
           if [ -d "$GITHUB_WORKSPACE/feeds/packages" ]; then
             _packages="$(find $GITHUB_WORKSPACE/feeds/packages -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
               if [ -f "$pkg_dir/Makefile" ]; then
@@ -233,6 +234,7 @@ jobs:
               fi
             done | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
           fi
+          
           if [ -d "$GITHUB_WORKSPACE/feeds/luci" ]; then
             _luci="$(find $GITHUB_WORKSPACE/feeds/luci -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
               if [ -f "$pkg_dir/Makefile" ]; then
@@ -240,18 +242,22 @@ jobs:
               fi
             done | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
           fi
+          
           if [ -z "$_packages" ]; then
             echo "⚠️ No packages found in feeds/packages"
           else
             echo "📦 Found packages: $_packages"
           fi
+          
           if [ -z "$_luci" ]; then
             echo "⚠️ No LuCI packages found in feeds/luci"
           else
             echo "🎨 Found LuCI packages: $_luci"
           fi
+          
           combined_packages="$_packages $_luci"
           combined_packages=$(echo "$combined_packages" | xargs -n1 | sort -u | xargs)
+          
           echo "📋 Combined packages: $combined_packages"
           echo "::endgroup::"
           echo "content=$combined_packages" >> $GITHUB_OUTPUT
@@ -308,9 +314,10 @@ jobs:
           else
             V=""
           fi
+
           PACKAGES="${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
           PACKAGES=$(echo $PACKAGES | xargs)
-          echo "Building packages: $PACKAGES"
+
           export BUILD_LOG=1
           export CONFIG_ALL_NONSHARED=n
           export CONFIG_ALL_KMODS=n
@@ -318,10 +325,13 @@ jobs:
           export CONFIG_AUTOREMOVE=n
           export CONFIG_SIGNED_PACKAGES=n
           export FEEDNAME="custom"
+          
           RET=0
+          
           echo "::group::Available packages in feeds"
           ./scripts/feeds list | grep -E "^(custom|base)" || echo "No custom packages found in feeds"
           echo "::endgroup::"
+          
           if [ -n "$PACKAGES" ]; then
             for PKG in $PACKAGES; do
               echo "::group::Building package: $PKG"
@@ -346,10 +356,12 @@ jobs:
             ./scripts/feeds install -p "$FEEDNAME" -f -a
             make package/compile $V -j$(nproc) || RET=$?
           fi
+          
           echo "::group::Build results"
           echo "Packages in bin/packages/:"
           find bin/packages/ -name "*.ipk" -o -name "*.apk" 2>/dev/null | head -20 || echo "No packages found"
           echo "::endgroup::"
+          
           if [ "$RET" -eq 0 ]; then
             echo "::group::Creating package index"
             if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
@@ -369,8 +381,10 @@ jobs:
         if: success() || failure()
         run: |
           cd $SDK_PATH
+          
           mkdir -p $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}
           mkdir -p $GITHUB_WORKSPACE/artifacts/logs
+          
           echo "::group::Debug - Directory structure"
           echo "Current directory: $(pwd)"
           echo "Checking for packages in bin/packages/${{ matrix.arch }}/"
@@ -380,19 +394,22 @@ jobs:
           echo "Full bin directory structure:"
           find bin/ -type f -name "*.ipk" -o -name "*.apk" 2>/dev/null || echo "No package files found in bin/"
           echo "::endgroup::"
-          echo "Copying all packages from architecture directory"
+          
           if [ -d "./bin/packages/${{ matrix.arch }}/custom" ]; then
             echo "Found custom packages directory"
             cp -r ./bin/packages/${{ matrix.arch }}/custom/* $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || true
           else
             echo "No custom packages directory found, skipping copy"
           fi
+          
           if [ -d "./logs/package/feeds/custom" ]; then
             cp -r ./logs/package/feeds/custom/* $GITHUB_WORKSPACE/artifacts/logs/ 2>/dev/null || true
           fi
+          
           if [ -d "./logs" ]; then
             find ./logs -name "*.log" -exec cp {} $GITHUB_WORKSPACE/artifacts/logs/ \; 2>/dev/null || true
           fi
+          
           if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
             PKG_EXT="*.apk"
             PKG_TYPE="APK"
@@ -400,12 +417,7 @@ jobs:
             PKG_EXT="*.ipk"
             PKG_TYPE="IPK"
           fi
-          echo "Built packages ($PKG_TYPE format):"
-          find $GITHUB_WORKSPACE/artifacts -name "$PKG_EXT" -type f | head -20
-          PKG_COUNT=$(find $GITHUB_WORKSPACE/artifacts -name "$PKG_EXT" -type f | wc -l)
-          echo "Total $PKG_TYPE packages built: $PKG_COUNT"
-          echo "All package files found:"
-          find $GITHUB_WORKSPACE/artifacts -name "*.ipk" -o -name "*.apk" | head -20
+          
           echo "::group::Final artifacts structure"
           find $GITHUB_WORKSPACE/artifacts -type f | head -20 || echo "No artifacts found"
           echo "::endgroup::"
