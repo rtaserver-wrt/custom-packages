@@ -1,0 +1,154 @@
+Package: 3ginfo-lite
+Version: 20250327-1
+Depends: libc, comgt
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/3ginfo
+SourceName: 3ginfo-lite
+Section: net
+SourceDateEpoch: 1750934880
+Maintainer: Cezary Jackiewicz <cezary@eko.one.pl>
+Architecture: all
+Installed-Size: 2172
+Filename: 3ginfo-lite_20250327-1_all.ipk
+Size: 2920
+SHA256sum: af284c029bce476e3a845cdc278802d4cabff07ff5901e2b65f05630dc0ce33c
+Description:  Information about the status of the 3G/4G/5G modem (lite version)
+
+Package: 3ginfo-old
+Version: 20250327-1
+Depends: libc, 3ginfo-text-old, uhttpd
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/3ginfo
+SourceName: 3ginfo-old
+Section: net
+SourceDateEpoch: 1750934880
+Maintainer: Cezary Jackiewicz <cezary@eko.one.pl>
+Architecture: all
+Installed-Size: 11325
+Filename: 3ginfo-old_20250327-1_all.ipk
+Size: 12114
+SHA256sum: 549c651354a155f612c4ee4e389b1b28fe254f3666107e5dcf381e313830ef52
+Description:  Information about the status of the 3G/4G/5G modem
+
+Package: 3ginfo-qmisignal
+Version: 20250327-1
+Depends: libc, uqmi, uhttpd
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/3ginfo
+SourceName: 3ginfo-qmisignal
+Section: net
+SourceDateEpoch: 1750934880
+Maintainer: Cezary Jackiewicz <cezary@eko.one.pl>
+Architecture: all
+Installed-Size: 2251
+Filename: 3ginfo-qmisignal_20250327-1_all.ipk
+Size: 3045
+SHA256sum: 7dfafcb63ea9d0cf4c47ad6d75739efbdaac16c71efe40034a96fb024edfff7d
+Description:  Information about the status of the 3G/4G/5G modem (qmi signal)
+
+Package: 3ginfo-text-old
+Version: 20250327-1
+Depends: libc, comgt
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/3ginfo
+SourceName: 3ginfo-text-old
+Section: net
+SourceDateEpoch: 1750934880
+Maintainer: Cezary Jackiewicz <cezary@eko.one.pl>
+Architecture: all
+Installed-Size: 9591
+Filename: 3ginfo-text-old_20250327-1_all.ipk
+Size: 10461
+SHA256sum: 8dd9eb30ebbe2ac9889581f3768317b970bf1f579d3a0f26450f99c9fb906b66
+Description:  Information about the status of the 3G/4G/5G modem (text version)
+
+Package: 3ginfo-text
+Version: 20250327-1
+Depends: libc, comgt, sms-tool
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/3ginfo
+SourceName: 3ginfo-text
+Section: net
+SourceDateEpoch: 1750934880
+Maintainer: Cezary Jackiewicz <cezary@eko.one.pl>
+Architecture: all
+Installed-Size: 23287
+Filename: 3ginfo-text_20250327-1_all.ipk
+Size: 24094
+SHA256sum: 216bd3ba6f6425985363b4b53de316b5f3fc605a702dc41f9f3b8ceefd1d66b3
+Description:  Information about the status of the 3G/4G/5G modem (text version)
+
+Package: 3ginfo
+Version: 20250327-1
+Depends: libc, 3ginfo-text, uhttpd
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/3ginfo
+SourceName: 3ginfo
+Section: net
+SourceDateEpoch: 1750934880
+Maintainer: Cezary Jackiewicz <cezary@eko.one.pl>
+Architecture: all
+Installed-Size: 19638
+Filename: 3ginfo_20250327-1_all.ipk
+Size: 20407
+SHA256sum: 9490335601d267e947fb3c8ffb7abbcf9602310b6db8ee13ca02103697e9e5ea
+Description:  Information about the status of the 3G/4G/5G modem
+
+Package: atinout
+Version: 0.9.1
+Depends: libc
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/atinout
+SourceName: atinout
+License: GPLv2
+LicenseFiles: LICENSE
+Section: net
+SourceDateEpoch: 1750934880
+Maintainer: Adrian Guenter <a@gntr.me>
+Architecture: aarch64_cortex-a72
+Installed-Size: 3472
+Filename: atinout_0.9.1_aarch64_cortex-a72.ipk
+Size: 4125
+SHA256sum: 57df365a0597a86c7d919bfe413bcbf7f4867300ff8ad4a76363d4b1806a7fe7
+Description:  Atinout is a program that will execute AT commands in sequence and
+ capture the response from the modem.
+
+Package: internet-detector
+Version: 1.5.1-15
+Depends: libc, lua, luaposix, libuci-lua
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/internet-detector
+SourceName: internet-detector
+Section: net
+SourceDateEpoch: 1750934880
+Maintainer: gSpot <https://github.com/gSpotx2f/luci-app-internet-detector>
+Architecture: all
+Installed-Size: 12161
+Filename: internet-detector_1.5.1-15_all.ipk
+Size: 13066
+SHA256sum: 0ac681240b7ba127f46a0b862cfd7100d10dd47cb52691cffe894e10c41f96d2
+Description:  Internet-detector is a small daemon
+ for checking Internet availability.
+ Written in Lua using the luaposix library.
+
+Package: luci-app-internet-detector
+Version: 1.5.1
+Depends: libc, internet-detector
+Source: /home/runner/work/custom-packages/custom-packages/feeds/luci/luci-app-internet-detector
+SourceName: luci-app-internet-detector
+Section: luci
+SourceDateEpoch: 1750934880
+Maintainer: OpenWrt LuCI community
+Architecture: all
+Installed-Size: 9448
+Filename: luci-app-internet-detector_1.5.1_all.ipk
+Size: 10319
+SHA256sum: 8087f39d212927d53baee9f7d46d44db515b9629c7a51d5fa5f9d271506c21af
+Description:  LuCI support for internet-detector
+
+Package: luci-i18n-internet-detector-ru
+Version: git-25.177.38880-6636649
+Depends: libc, luci-app-internet-detector
+Source: /home/runner/work/custom-packages/custom-packages/feeds/luci/luci-app-internet-detector
+SourceName: luci-i18n-internet-detector-ru
+Section: luci
+SourceDateEpoch: 1750934880
+Architecture: all
+Installed-Size: 5137
+Filename: luci-i18n-internet-detector-ru_git-25.177.38880-6636649_all.ipk
+Size: 5867
+SHA256sum: 6967b5cc62b837143ef198bcdb4bd2db4d97292ea0b5c590287a13c160b0b71e
+Description:  Translation for luci-app-internet-detector - Русский (Russian)
+

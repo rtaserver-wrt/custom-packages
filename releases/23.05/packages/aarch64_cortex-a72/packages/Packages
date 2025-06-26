@@ -1,0 +1,38 @@
+Package: lua-bit32
+Version: 5.3.0-1
+Depends: libc, lua
+License: MIT
+Section: lang
+Architecture: aarch64_cortex-a72
+Installed-Size: 8194
+Filename: lua-bit32_5.3.0-1_aarch64_cortex-a72.ipk
+Size: 8895
+SHA256sum: bc85a2cf93c7babc0cc0310be8cd1ebb80ae9aa41f76a2a27fd679a4b5605922
+Description:  lua-bit32 is the native Lua 5.2 bit manipulation library,
+ backported to Lua 5.1
+
+Package: luaposix
+Version: 35.1-1
+Depends: libc, lua, lua-bit32
+License: MIT
+Section: lang
+Architecture: aarch64_cortex-a72
+Installed-Size: 241068
+Filename: luaposix_35.1-1_aarch64_cortex-a72.ipk
+Size: 237467
+SHA256sum: 2aa6c4827cc05d67f8a6c9c497e64dd6f12e4cbfd195bd57b63102c31148461d
+Description:  luaposix is a general POSIX library for Lua providing access
+ to various low level libc functions.
+
+Package: sms-tool
+Version: 2023-09-21-1b6ca032-1
+Depends: libc
+License: Apache-2.0
+Section: utils
+Architecture: aarch64_cortex-a72
+Installed-Size: 9082
+Filename: sms-tool_2023-09-21-1b6ca032-1_aarch64_cortex-a72.ipk
+Size: 9738
+SHA256sum: bbf1e30a33a8fe6ca4e590fd14bce1556d3347c44cc117d24e37eaf515132f29
+Description:  SMS Tool for 3G/4G modem
+
