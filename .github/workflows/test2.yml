@@ -302,6 +302,12 @@ jobs:
           find ./feeds/packages -name "Makefile" -path "*/Makefile" | sed 's|./feeds/packages/||' | sed 's|/Makefile||' | sort || true
           find ./feeds/luci -name "Makefile" -path "*/Makefile" | sed 's|./feeds/luci/||' | sed 's|/Makefile||' | sort || true
 
+      # Add this step to generate default configuration
+      - name: Generate Default Configuration
+        run: |
+          cd $SDK_PATH
+          make defconfig
+
       - name: Build Packages
         run: |
           cd $SDK_PATH
