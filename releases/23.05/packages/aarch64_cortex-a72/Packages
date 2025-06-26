@@ -1,0 +1,48 @@
+Package: atinout
+Version: 0.9.1
+Depends: libc
+License: GPLv2
+Section: net
+Architecture: aarch64_cortex-a72
+Installed-Size: 3475
+Filename: atinout_0.9.1_aarch64_cortex-a72.ipk
+Size: 4126
+SHA256sum: b4deafa6204a0685aff1c641cce8ce9b70e49efd8e051c673b0ebc9e20ef3a59
+Description:  Atinout is a program that will execute AT commands in sequence and
+ capture the response from the modem.
+
+Package: internet-detector
+Version: 1.5.1-15
+Depends: libc, lua, luaposix, libuci-lua
+Section: net
+Architecture: all
+Installed-Size: 12157
+Filename: internet-detector_1.5.1-15_all.ipk
+Size: 13062
+SHA256sum: 8a0e53f73117c7a6751731e1d44d8f0d0572d54e9ba4099d328af51c2de83816
+Description:  Internet-detector is a small daemon
+ for checking Internet availability.
+ Written in Lua using the luaposix library.
+
+Package: luci-app-internet-detector
+Version: 1.5.1
+Depends: libc, internet-detector
+Section: luci
+Architecture: all
+Installed-Size: 9453
+Filename: luci-app-internet-detector_1.5.1_all.ipk
+Size: 10325
+SHA256sum: d1eef22de88dba801953fba67c2534290905a202ac0205b0266831be9f90637b
+Description:  LuCI support for internet-detector
+
+Package: luci-i18n-internet-detector-ru
+Version: git-25.177.32961-1733d09
+Depends: libc, luci-app-internet-detector
+Section: luci
+Architecture: all
+Installed-Size: 5138
+Filename: luci-i18n-internet-detector-ru_git-25.177.32961-1733d09_all.ipk
+Size: 5865
+SHA256sum: 45f0d9e004e621a4c0073ec97ac48ea9378007d0a4e5dd475f7a723fda31bde9
+Description:  Translation for luci-app-internet-detector - Русский (Russian)
+
