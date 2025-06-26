@@ -12,8 +12,6 @@ on:
     paths-ignore:
       - '.github/workflows/**'
       - 'README.md'
-    paths:
-      - 'feeds/**'
 
   workflow_dispatch:
     inputs:
