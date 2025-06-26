@@ -1,25 +1,31 @@
-name: 🚀 AutoCompiler OpenWrt Packages
+#
+# Copyright (C) 2025 nosignals
+#
+name: AutoCompiler OpenWrt Packages
 
 on:
+  workflow_run:
+    workflows: ["Auto Sync App"]
+    types:
+      - completed
+
   push:
     branches:
       - main
     paths-ignore:
       - '.github/workflows/**'
       - 'README.md'
-      - 'docs/**'
-      - '*.md'
     
   workflow_dispatch:
     inputs:
       compile_pkg:
-        description: '📦 Compile specific packages (leave empty for all packages)'
+        description: 'Compile packages (default: all packages on list_packages.txt)'
         required: false
         default: ''
         type: string
         
       verbose:
-        description: '🔍 Verbose logging level'
+        description: 'Verbose (default: 0)'
         required: false
         default: '0'
         type: choice
@@ -29,8 +35,8 @@ on:
           - '2'
         
       without_pages:
-        description: '🚫 Skip GitHub Pages deployment'
-        required: false
+        description: 'Dont deploy pages'
+        required: true
         default: false
         type: boolean
         
@@ -38,343 +44,543 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  actions: write
-  
-env:
-  DEBIAN_FRONTEND: noninteractive
-  TZ: Asia/Jakarta
   
 jobs: 
-  prepare:
-    name: 🔍 Prepare Build Matrix
-    runs-on: ubuntu-latest
-    outputs:
-      packages: ${{ steps.packages.outputs.packages }}
-      matrix: ${{ steps.matrix.outputs.matrix }}
+  build_ipk:
+    permissions:
+      contents: write
+    name: AutoCompiler
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        release:
+          - SNAPSHOT
+          - 24.10.2
+          - 23.05.5
+        arch:
+          - x86_64
+          - mips_24kc
+          - mipsel_24kc
+          - arm_cortex-a7_neon-vfpv4
+          - aarch64_cortex-a53
+          - aarch64_cortex-a72
+          - aarch64_generic
+          
     steps:
-      - name: 📥 Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: 'main'
+          ref: main
 
       - name: 📋 Read Package List
-        if: inputs.compile_pkg == ''
+        if: ${{ inputs.compile_pkg == '' }}
         id: list_package
         run: |
           echo "::group::📋 Reading package list"
-          _packages="$(ls -1 $GITHUB_WORKSPACE/feeds/packages/ | tr '\n' ' ')"
-          _luci="$(ls -1 $GITHUB_WORKSPACE/feeds/luci/ | tr '\n' ' ')"
+          
+          # Initialize package lists
+          _packages=""
+          _luci=""
+          
+          # Check for packages directory and find subdirectories (actual packages)
+          if [ -d "$GITHUB_WORKSPACE/feeds/packages" ]; then
+            _packages="$(find $GITHUB_WORKSPACE/feeds/packages -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
+              if [ -f "$pkg_dir/Makefile" ]; then
+                basename "$pkg_dir"
+              fi
+            done | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          fi
+          
+          # Check for luci directory and find subdirectories (actual packages)
+          if [ -d "$GITHUB_WORKSPACE/feeds/luci" ]; then
+            _luci="$(find $GITHUB_WORKSPACE/feeds/luci -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
+              if [ -f "$pkg_dir/Makefile" ]; then
+                basename "$pkg_dir"
+              fi
+            done | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          fi
+          
+          # Log findings
           if [ -z "$_packages" ]; then
             echo "⚠️ No packages found in feeds/packages"
-            _packages=""
+          else
+            echo "📦 Found packages: $_packages"
           fi
+          
           if [ -z "$_luci" ]; then
             echo "⚠️ No LuCI packages found in feeds/luci"
-            _luci=""
-          fi
-          echo "Packages: $_packages"
-          echo "LuCI Packages: $_luci"
-          echo "::endgroup::"
-          echo "content=$_packages $_luci" >> $GITHUB_OUTPUT
-
-      - name: 📦 Set Packages Output
-        id: packages
-        run: |
-          if [ -n "${{ inputs.compile_pkg }}" ]; then
-            echo "packages=${{ inputs.compile_pkg }}" >> $GITHUB_OUTPUT
           else
-            echo "packages=${{ steps.list_package.outputs.content }}" >> $GITHUB_OUTPUT
+            echo "🎨 Found LuCI packages: $_luci"
           fi
-
-      - name: 🏗️ Generate Build Matrix
-        id: matrix
-        run: |
-          cat << 'EOF' > matrix.json
-          {
-            "include": [
-              {"release": "SNAPSHOT", "arch": "x86_64", "display": "SNAPSHOT x86_64"},
-              {"release": "SNAPSHOT", "arch": "mips_24kc", "display": "SNAPSHOT MIPS"},
-              {"release": "SNAPSHOT", "arch": "mipsel_24kc", "display": "SNAPSHOT MIPSEL"},
-              {"release": "SNAPSHOT", "arch": "arm_cortex-a7_neon-vfpv4", "display": "SNAPSHOT ARM Cortex-A7"},
-              {"release": "SNAPSHOT", "arch": "aarch64_cortex-a53", "display": "SNAPSHOT ARM64 A53"},
-              {"release": "SNAPSHOT", "arch": "aarch64_cortex-a72", "display": "SNAPSHOT ARM64 A72"},
-              {"release": "SNAPSHOT", "arch": "aarch64_generic", "display": "SNAPSHOT ARM64 Generic"},
-              {"release": "24.10.2", "arch": "x86_64", "display": "24.10.2 x86_64"},
-              {"release": "24.10.2", "arch": "mips_24kc", "display": "24.10.2 MIPS"},
-              {"release": "24.10.2", "arch": "mipsel_24kc", "display": "24.10.2 MIPSEL"},
-              {"release": "24.10.2", "arch": "arm_cortex-a7_neon-vfpv4", "display": "24.10.2 ARM Cortex-A7"},
-              {"release": "24.10.2", "arch": "aarch64_cortex-a53", "display": "24.10.2 ARM64 A53"},
-              {"release": "24.10.2", "arch": "aarch64_cortex-a72", "display": "24.10.2 ARM64 A72"},
-              {"release": "24.10.2", "arch": "aarch64_generic", "display": "24.10.2 ARM64 Generic"},
-              {"release": "23.05.5", "arch": "x86_64", "display": "23.05.5 x86_64"},
-              {"release": "23.05.5", "arch": "mips_24kc", "display": "23.05.5 MIPS"},
-              {"release": "23.05.5", "arch": "mipsel_24kc", "display": "23.05.5 MIPSEL"},
-              {"release": "23.05.5", "arch": "arm_cortex-a7_neon-vfpv4", "display": "23.05.5 ARM Cortex-A7"},
-              {"release": "23.05.5", "arch": "aarch64_cortex-a53", "display": "23.05.5 ARM64 A53"},
-              {"release": "23.05.5", "arch": "aarch64_cortex-a72", "display": "23.05.5 ARM64 A72"},
-              {"release": "23.05.5", "arch": "aarch64_generic", "display": "23.05.5 ARM64 Generic"}
-            ]
-          }
-          EOF
-          echo "matrix=$(cat matrix.json | jq -c .)" >> $GITHUB_OUTPUT
-
-  build_ipk:
-    name: 🔨 Build ${{ matrix.display }}
-    needs: prepare
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
-      
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          ref: 'main'
-
-      - name: 🗂️ Create Artifacts Directory
-        run: |
-          mkdir -p artifacts
-          echo "Build started at $(date)" > artifacts/build.log
-         
-      - name: 📦 List Packages to Build
-        run: |
-          echo "::group::📋 Package Information"
-          echo "Release: ${{ matrix.release }}"
-          echo "Architecture: ${{ matrix.arch }}"
-          echo "Packages: ${{ needs.prepare.outputs.packages }}"
+          
+          # Combine packages and remove duplicates
+          combined_packages="$_packages $_luci"
+          combined_packages=$(echo "$combined_packages" | xargs -n1 | sort -u | xargs)
+          
+          echo "📋 Combined packages: $combined_packages"
           echo "::endgroup::"
+          echo "content=$combined_packages" >> $GITHUB_OUTPUT
+
+      - name: List Compiled Packages
+        run: echo "Compiled Packages | ${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
         
-      - name: 🏗️ Build OpenWrt Packages
-        uses: openwrt/gh-action-sdk@main
-        env:
-          ARCH: ${{ matrix.arch }}-${{ matrix.release }}
-          ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
-          FEED_DIR: ${{ github.workspace }}/feeds
-          PACKAGES: ${{ needs.prepare.outputs.packages }}
-          INDEX: 1
-          V: ${{ inputs.verbose || '0' }}
-          IGNORE_ERRORS: true
-          NO_REFRESH_CHECK: true
-          # NO_SHFMT_CHECK: true
-          # KEY_BUILD: ${{ secrets.KEY_BUILD }}
-          # PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-        
-      - name: 📊 Build Summary
-        if: always()
+      - name: Creating Directory
+        run: mkdir -p artifacts
+         
+      - name: Install Dependencies
         run: |
-          echo "::group::📊 Build Results"
-          if [ -d "artifacts/bin/packages/${{ matrix.arch }}" ]; then
-            echo "✅ Build successful for ${{ matrix.arch }}-${{ matrix.release }}"
-            echo "📦 Generated packages:"
-            
-            # Handle both .ipk (stable) and .apk (SNAPSHOT) formats
-            if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
-              find artifacts/bin/packages/${{ matrix.arch }} -name "*.apk" | head -20
-              pkg_count=$(find artifacts/bin/packages/${{ matrix.arch }} -name "*.apk" | wc -l)
-              echo "📈 Total APK packages built: $pkg_count"
+          sudo -E rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d /usr/local/lib/android
+          echo "install packages!!!!!!"
+          sudo -E apt-get -qq update
+          sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext \
+          git libncurses-dev libssl-dev python3-distutils python3-setuptools python3-pyelftools \
+          rsync swig unzip zlib1g-dev file wget
+          sudo -E apt-get -qq autoremove --purge
+          sudo -E apt-get -qq clean
+        
+      - name: Download and Setup OpenWrt SDK
+        run: |
+          # Determine SDK URL based on architecture and release
+          RELEASE="${{ matrix.release }}"
+          ARCH="${{ matrix.arch }}"
+          
+          # Map release versions to URL paths and GCC versions
+          if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+            URL_PATH="snapshots/targets"
+            GCC_VERSION="14.3.0"
+            FILE_EXT="tar.zst"
+            echo "Using SNAPSHOT build - packages will be in APK format"
+          elif [[ "$RELEASE" == "24.10.2" ]]; then
+            URL_PATH="releases/24.10.2/targets"
+            GCC_VERSION="13.3.0"
+            FILE_EXT="tar.zst"
+            echo "Using stable release - packages will be in IPK format"
+          elif [[ "$RELEASE" == "23.05.5" ]]; then
+            URL_PATH="releases/23.05.5/targets"
+            GCC_VERSION="12.3.0"
+            FILE_EXT="tar.xz"
+            echo "Using stable release - packages will be in IPK format"
+          fi
+          
+          # Map architectures to target/subtarget
+          case "$ARCH" in
+            "x86_64")
+              TARGET="x86/64"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-x86-64_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-x86-64_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "mips_24kc")
+              TARGET="ath79/generic"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-ath79-generic_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-ath79-generic_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "mipsel_24kc")
+              TARGET="ramips/mt7621"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-ramips-mt7621_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-ramips-mt7621_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "arm_cortex-a7_neon-vfpv4")
+              TARGET="bcm27xx/bcm2709"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-bcm27xx-bcm2709_gcc-${GCC_VERSION}_musl_eabi.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-bcm27xx-bcm2709_gcc-${GCC_VERSION}_musl_eabi.Linux-x86_64"
+              fi
+              ;;
+            "aarch64_cortex-a53")
+              TARGET="bcm27xx/bcm2710"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-bcm27xx-bcm2710_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-bcm27xx-bcm2710_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "aarch64_cortex-a72")
+              TARGET="bcm27xx/bcm2711"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-bcm27xx-bcm2711_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-bcm27xx-bcm2711_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "aarch64_generic")
+              TARGET="rockchip/armv8"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-rockchip-armv8_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-rockchip-armv8_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+          esac
+          
+          SDK_URL="https://downloads.openwrt.org/${URL_PATH}/${TARGET}/${SDK_NAME}.${FILE_EXT}"
+          
+          echo "Downloading SDK from: $SDK_URL"
+          wget -q "$SDK_URL" -O "sdk.${FILE_EXT}"
+          
+          echo "Extracting SDK..."
+          if [[ "$FILE_EXT" == "tar.zst" ]]; then
+            if command -v tar &> /dev/null && tar --use-compress-program=zstd -tf sdk.tar.zst >/dev/null 2>&1; then
+              tar --use-compress-program=zstd -xf sdk.tar.zst
             else
-              find artifacts/bin/packages/${{ matrix.arch }} -name "*.ipk" | head -20
-              pkg_count=$(find artifacts/bin/packages/${{ matrix.arch }} -name "*.ipk" | wc -l)
-              echo "📈 Total IPK packages built: $pkg_count"
+              zstd -d "sdk.${FILE_EXT}" -o sdk.tar
+              tar -xf sdk.tar
             fi
           else
-            echo "❌ Build failed or no packages generated"
+            tar -xf "sdk.${FILE_EXT}"
           fi
+          
+          mv ${SDK_NAME} openwrt-sdk
+          
+          echo "SDK_PATH=$(pwd)/openwrt-sdk" >> $GITHUB_ENV
+          echo "ARCH=${ARCH}" >> $GITHUB_ENV
+
+      - name: Setup SDK Feeds
+        run: |
+          cd $SDK_PATH
+          
+          # Setup feeds.conf with custom feeds
+          if [ -z "$NO_DEFAULT_FEEDS" ]; then
+            sed \
+              -e 's,https://git.openwrt.org/feed/,https://github.com/openwrt/,' \
+              -e 's,https://git.openwrt.org/openwrt/,https://github.com/openwrt/,' \
+              -e 's,https://git.openwrt.org/project/,https://github.com/openwrt/,' \
+              feeds.conf.default > feeds.conf
+          fi
+          
+          # Add custom feeds
+          FEEDNAME="custom"
+          echo "src-link $FEEDNAME ${{ github.workspace }}/feeds/" >> feeds.conf
+          
+          echo "Feed configuration:"
+          cat feeds.conf
+          
+          # Update and install feeds
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Copy Package Sources
+        run: |
+          cd $SDK_PATH
+          
+          # Copy package sources to SDK if they exist in the root package directory
+          if [ -d "${{ github.workspace }}/package" ]; then
+            echo "Copying root package directory..."
+            cp -r ${{ github.workspace }}/package/* ./package/ 2>/dev/null || true
+          fi
+
+      - name: Generate Default Configuration
+        run: |
+          cd $SDK_PATH
+          make defconfig
+
+      - name: Disable Package Signing
+        run: |
+          cd $SDK_PATH
+          
+          # Disable package signing to avoid key-build errors
+          echo "CONFIG_SIGNED_PACKAGES=n" >> .config
+          
+          # Regenerate config to apply changes
+          make defconfig
+
+      - name: Build Packages
+        run: |
+          cd $SDK_PATH
+          
+          # Set verbose mode
+          if [ "${{ inputs.verbose }}" = "1" ]; then
+            V="V=s"
+          elif [ "${{ inputs.verbose }}" = "2" ]; then
+            V="V=sc"
+          else
+            V=""
+          fi
+          
+          # Get packages to compile
+          PACKAGES="${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
+          PACKAGES=$(echo $PACKAGES | xargs)
+          
+          echo "Building packages: $PACKAGES"
+          
+          # Set environment variables for build
+          export BUILD_LOG=1
+          export CONFIG_ALL_NONSHARED=n
+          export CONFIG_ALL_KMODS=n
+          export CONFIG_ALL=n
+          export CONFIG_AUTOREMOVE=n
+          export CONFIG_SIGNED_PACKAGES=n
+          export FEEDNAME="custom"
+          
+          RET=0
+          
+          # Debug: Show available packages
+          echo "::group::Available packages in feeds"
+          ./scripts/feeds list | grep -E "^(custom|base)" || echo "No custom packages found in feeds"
+          echo "::endgroup::"
+          
+          if [ -n "$PACKAGES" ]; then
+            # Build specific packages
+            for PKG in $PACKAGES; do
+              echo "::group::Building package: $PKG"
+              
+              # Install package from custom feed
+              ./scripts/feeds install -p "$FEEDNAME" -f "$PKG" || true
+              
+              # Check if package is available for this architecture
+              if make -f .config -f tmp/.packagedeps -f <(echo "\$(info \$(sort \$(package-y) \$(package-m)))"; echo -en "a:\n\t@:") 2>/dev/null | tr ' ' '\n' | grep -qE "(^|/)$PKG$"; then
+                echo "Building $PKG..."
+                make package/$PKG/compile $V -j$(nproc) || {
+                  echo "Failed to build package: $PKG"
+                  RET=1
+                  echo "::endgroup::"
+                  continue
+                }
+                
+                # Check if package was actually built
+                echo "Checking for built package files..."
+                find bin/packages/ -name "*$PKG*" -type f 2>/dev/null || echo "No package files found for $PKG"
+                
+              else
+                echo "::warning::Skipping $PKG due to unsupported architecture or package not found"
+              fi
+              
+              echo "::endgroup::"
+            done
+          else
+            echo "No specific packages specified, building all custom packages"
+            ./scripts/feeds install -p "$FEEDNAME" -f -a
+            make package/compile $V -j$(nproc) || RET=$?
+          fi
+          
+          # Debug: Show what was built
+          echo "::group::Build results"
+          echo "Packages in bin/packages/:"
+          find bin/packages/ -name "*.ipk" -o -name "*.apk" 2>/dev/null | head -20 || echo "No packages found"
+          echo "::endgroup::"
+          
+          # Create package index without signing
+          if [ "$RET" -eq 0 ]; then
+            echo "::group::Creating package index"
+            
+            # Handle different package index creation for SNAPSHOT vs stable releases
+            if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
+              # For SNAPSHOT (APK format), use apk-tools for indexing
+              make package/index -j1 V=s CONFIG_SIGNED_PACKAGES=n || {
+                echo "APK package index creation failed, trying alternative method..."
+                # Alternative: create APK index manually
+                cd bin/packages/${{ matrix.arch }}/custom 2>/dev/null && {
+                  if command -v apk &> /dev/null; then
+                    apk index -o APKINDEX.tar.gz *.apk 2>/dev/null || true
+                  else
+                    # Fallback: create basic index
+                    find . -name "*.apk" -exec basename {} \; > APKINDEX.txt 2>/dev/null || true
+                  fi
+                } || echo "No custom package directory found for indexing"
+              }
+            else
+              # For stable releases (IPK format), use ipkg indexing
+              make package/index -j1 V=s CONFIG_SIGNED_PACKAGES=n || {
+                echo "IPK package index creation failed, trying alternative method..."
+                # Alternative: create IPK index manually
+                cd bin/packages/${{ matrix.arch }}/custom 2>/dev/null && {
+                  ../../../scripts/ipkg-make-index.sh . > Packages 2>/dev/null || true
+                  gzip -c Packages > Packages.gz 2>/dev/null || true
+                } || echo "No custom package directory found for indexing"
+              }
+            fi
+            
+            echo "::endgroup::"
+          fi
+          
+          exit $RET
+
+      - name: Copy Built Packages
+        if: success() || failure()
+        run: |
+          cd $SDK_PATH
+          
+          # Create artifacts directory structure
+          mkdir -p ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}
+          mkdir -p ${{ github.workspace }}/artifacts/logs
+          
+          # Debug: Show directory structure
+          echo "::group::Debug - Directory structure"
+          echo "Current directory: $(pwd)"
+          echo "Checking for packages in bin/packages/${{ matrix.arch }}/"
+          ls -la bin/packages/${{ matrix.arch }}/ 2>/dev/null || echo "Directory bin/packages/${{ matrix.arch }}/ does not exist"
+          
+          echo "Checking for any packages in bin/packages/"
+          find bin/packages/ -name "*.ipk" -o -name "*.apk" 2>/dev/null | head -10 || echo "No packages found"
+          
+          echo "Full bin directory structure:"
+          find bin/ -type f -name "*.ipk" -o -name "*.apk" 2>/dev/null || echo "No package files found in bin/"
+          echo "::endgroup::"
+          
+          # Copy all packages from the architecture directory to artifacts
+          echo "Copying all packages from architecture directory"
+          if [ -d "./bin/packages/${{ matrix.arch }}/custom" ]; then
+            echo "Found custom packages directory"
+            cp -r ./bin/packages/${{ matrix.arch }}/custom/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || true
+          else
+            echo "No custom packages directory found, skipping copy"
+          fi
+
+          # Copy logs if they exist
+          if [ -d "./logs/package/feeds/custom" ]; then
+            cp -r ./logs/package/feeds/custom/* ${{ github.workspace }}/artifacts/logs/ 2>/dev/null || true
+          fi
+          
+          # Copy any other logs
+          if [ -d "./logs" ]; then
+            find ./logs -name "*.log" -exec cp {} ${{ github.workspace }}/artifacts/logs/ \; 2>/dev/null || true
+          fi
+          
+          # Determine package extension based on release
+          if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
+            PKG_EXT="*.apk"
+            PKG_TYPE="APK"
+          else
+            PKG_EXT="*.ipk"
+            PKG_TYPE="IPK"
+          fi
+          
+          # List built packages
+          echo "Built packages ($PKG_TYPE format):"
+          find ${{ github.workspace }}/artifacts -name "$PKG_EXT" -type f | head -20
+          
+          # Count built packages
+          PKG_COUNT=$(find ${{ github.workspace }}/artifacts -name "$PKG_EXT" -type f | wc -l)
+          echo "Total $PKG_TYPE packages built: $PKG_COUNT"
+          
+          # Also show any other package files for debugging
+          echo "All package files found:"
+          find ${{ github.workspace }}/artifacts -name "*.ipk" -o -name "*.apk" | head -20
+          
+          # Show final artifacts structure
+          echo "::group::Final artifacts structure"
+          find ${{ github.workspace }}/artifacts -type f | head -20 || echo "No artifacts found"
           echo "::endgroup::"
         
-      - name: 📤 Upload Artifacts
+      - name: Delivering Package
         uses: actions/upload-artifact@v4
-        if: success()
         with:
           name: openwrt_${{ matrix.release }}_${{ matrix.arch }}
           path: ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/*
-          retention-days: 5
-          compression-level: 6
+          retention-days: 30
+
+      - name: Upload Build Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build_logs_${{ matrix.release }}_${{ matrix.arch }}
+          path: ${{ github.workspace }}/artifacts/logs/*
+          retention-days: 7
 
   push_packages:
-    name: 🚀 Deploy Packages
-    needs: [prepare, build_ipk]
-    if: always() && (needs.build_ipk.result == 'success' || needs.build_ipk.result == 'failure')
-    runs-on: ubuntu-latest
+    needs: build_ipk
+    if: success() || failure()
+    name: Push Packages 
     permissions:
       contents: write
-      
+    runs-on: ubuntu-22.04
     steps:
-      - name: 📥 Checkout Pages Branch
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: 'gh-pages'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          lfs: false
+          submodules: false
       
-      - name: 📦 Download Build Artifacts
+      - name: Download temporary artifact
         uses: actions/download-artifact@v4
-        with:
-          path: ./downloads
-        
-      - name: 🗂️ Organize Release Structure
+
+      - name: Delete Logs
+        run: |
+          # Remove logs directory if it exists
+          sudo rm -rf build_logs*
+
+      - name: Moving artifact to releases
         shell: bash
         run: |
-          echo "::group::🗂️ Creating Release Structure"
+          mkdir -p releases 2>/dev/null
+          version=( SNAPSHOT 24.10.2 23.05.5 )
+          archi=( x86_64 mips_24kc mipsel_24kc arm_cortex-a7_neon-vfpv4 aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic )
           
-          # Create releases directory
-          mkdir -p releases
-          
-          # Define versions and architectures
-          declare -a versions=("SNAPSHOT" "24.10.2" "23.05.5")
-          declare -a archs=("x86_64" "mips_24kc" "mipsel_24kc" "arm_cortex-a7_neon-vfpv4" "aarch64_cortex-a53" "aarch64_cortex-a72" "aarch64_generic")
-          
-          # Process each version and architecture
-          for version in "${versions[@]}"; do
-            if [ "$version" = "SNAPSHOT" ]; then
-              vers_short="SNAPSHOT"
-              echo "📁 Processing version: $version -> $vers_short (OpenWrt Snapshot)"
+          for vr in ${version[*]}; do
+            if [[ "$vr" == "SNAPSHOT" ]]; then
+              vers="snapshot"
             else
-              vers_short=$(echo "$version" | sed 's/\.[^.]*$//')
-              echo "📁 Processing version: $version -> $vers_short"
+              vers=$(echo $vr | sed 's/..$//')
             fi
             
-            # Determine package extension based on version
-            if [ "$version" = "SNAPSHOT" ]; then
-              pkg_ext="apk"
-              echo "  📦 Using APK format for snapshot branch"
-            else
-              pkg_ext="ipk"
-              echo "  📦 Using IPK format for stable branch"
-            fi
-            
-            for arch in "${archs[@]}"; do
-              artifact_dir="downloads/openwrt_${version}_${arch}"
-              target_dir="releases/${vers_short}/packages/${arch}"
-              
+            for arc in ${archi[*]}; do
+              artifact_dir="openwrt_${vr}_${arc}"
               if [ -d "$artifact_dir" ]; then
-                echo "  📦 Processing $arch..."
-                rm -rf "$target_dir"
-                mkdir -p "$target_dir"
-                
-                # Copy packages with correct extension, excluding routing and telephony
-                find "$artifact_dir" -name "*.$pkg_ext" -not -path "*/routing/*" -not -path "*/telephony/*" \
-                  -exec cp {} "$target_dir/" \; 2>/dev/null || true
-                
-                # Create package index if packages exist
-                if [ "$(ls -A $target_dir 2>/dev/null)" ]; then
-                  cd "$target_dir"
-                  echo "Package: $(basename $target_dir)" > Packages
-                  echo "Architecture: $arch" >> Packages
-                  echo "Version: $version" >> Packages
-                  echo "Branch: $([ "$version" = "SNAPSHOT" ] && echo "SNAPSHOT" || echo "STABLE")" >> Packages
-                  echo "Format: $pkg_ext" >> Packages
-                  echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> Packages
-                  echo "" >> Packages
-                  cd - > /dev/null
-                  
-                  pkg_count=$(ls -1 "$target_dir"/*.$pkg_ext 2>/dev/null | wc -l)
-                  echo "    ✅ $pkg_count $pkg_ext packages copied"
-                else
-                  echo "    ⚠️  No packages found"
-                fi
+                rm -rf releases/$vers/packages/$arc
+                mkdir -p releases/$vers/packages/$arc
+                cp -rf $artifact_dir/* releases/$vers/packages/$arc/
+                # Remove routing and telephony if they exist
+                rm -rf releases/$vers/packages/$arc/routing releases/$vers/packages/$arc/telephony
+              else
+                echo "Warning: Artifact directory $artifact_dir not found"
               fi
             done
           done
           
-          # Cleanup downloads
-          rm -rf downloads
+          rm -rf openwrt_* 2>/dev/null || true
           
-          echo "::endgroup::"
-          
-      - name: 📊 Generate Repository Statistics
-        run: |
-          echo "::group::📊 Repository Statistics"
-          
-          # Create stats file
-          cat > releases/stats.json << EOF
-          {
-            "generated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "workflow_run": "${{ github.run_number }}",
-            "commit": "${{ github.sha }}",
-            "versions": {}
-          }
-          EOF
-          
-          # Count packages per version
-          for version_dir in releases/*/; do
-            if [ -d "$version_dir" ] && [ "$(basename $version_dir)" != "stats.json" ]; then
-              version=$(basename "$version_dir")
-              
-              # Count both APK and IPK packages
-              apk_count=$(find "$version_dir" -name "*.apk" 2>/dev/null | wc -l)
-              ipk_count=$(find "$version_dir" -name "*.ipk" 2>/dev/null | wc -l)
-              total_packages=$((apk_count + ipk_count))
-              
-              if [ "$version" = "SNAPSHOT" ]; then
-                echo "📈 $version: $apk_count APK packages"
-              elif [ $ipk_count -gt 0 ]; then
-                echo "📈 $version: $ipk_count IPK packages"
-              else
-                echo "📈 $version: 0 packages"
-              fi
-            fi
-          done
-          
-          echo "::endgroup::"
-        
-      - name: 📁 Display Repository Structure
+      - name: Display structure files
         working-directory: releases
-        run: |
-          echo "::group::📁 Repository Structure"
-          tree -L 3 2>/dev/null || find . -type d | head -20
-          echo "::endgroup::"
+        run: ls -R
         
-      - name: 🚀 Commit and Push Changes
+      - name: Commit and push Packages
+        env:
+          Branch: gh-pages
         run: |
-          git config --local user.name "🤖 OpenWrt Bot"
-          git config --local user.email "openwrt-bot@users.noreply.github.com"
-          
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "ℹ️ No changes to commit"
-          else
-            git add .
-            git commit -m "            🚀 Update OpenWrt Packages
-            
-            📦 Workflow run: #${{ github.run_number }}
-            🔨 Commit: ${{ github.sha }}
-            ⏰ Updated: $(date -u +%Y-%m-%d %H:%M:%S) UTC
-            📋 Packages: ${{ needs.prepare.outputs.packages }}
-            🗂️ Structure: SNAPSHOT (APK) + 24.10/23.05 (IPK)"
-            
+          git config --local user.name "GitHub Action"
+          git config --local user.email "actions-user@users.noreply.github.com"
+          git add .
+          if ! git diff --staged --quiet; then
+            git commit -m "Update Packages - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
             git push
-            echo "✅ Changes pushed successfully"
+          else
+            echo "No changes to commit"
           fi
           
   build_pages:
-    name: 🌐 Build GitHub Pages
-    needs: [prepare, push_packages]
-    if: inputs.without_pages != true && !cancelled() && needs.push_packages.result == 'success'
-    runs-on: ubuntu-latest
+    needs: push_packages
+    if: inputs.without_pages == false && !cancelled()
+    name: Building pages
     permissions:
       contents: write
-      pages: write
-      id-token: write
-      
+    runs-on: ubuntu-22.04
     steps:
-      - name: 📥 Checkout Pages Branch
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: 'gh-pages'
           lfs: true
           submodules: true
           
-      - name: 💎 Setup Ruby Environment
+      - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
+          ruby-version: '3.1'
           bundler-cache: true
-          cache-version: 1
+          cache-version: 0 
           
-      - name: 🔧 Pre-build Processing
+      - name: prenodes
         env:
           SERVER_HOME: releases
         run: |
@@ -382,94 +588,44 @@ jobs:
             chmod +x ./prenodes.sh
             ./prenodes.sh
           else
-            echo "⚠️ prenodes.sh not found, skipping pre-processing"
+            echo "prenodes.sh not found, skipping"
           fi
         
-      - name: ⚙️ Configure GitHub Pages
+      - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
         
-      - name: 🏗️ Build Jekyll Site
-        run: |
-          echo "::group::🏗️ Building Jekyll Site"
-          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}" --verbose
-          echo "::endgroup::"
+      - name: Build with Jekyll
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
         env:
           JEKYLL_ENV: production
           
-      - name: 📤 Upload Pages Artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./_site
-          
-  deploy_pages:
-    name: 🌐 Deploy to GitHub Pages
-    needs: build_pages
-    if: needs.build_pages.result == 'success'
-    runs-on: ubuntu-latest
+        
+  deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
-      
+    runs-on: ubuntu-22.04
+    needs: build_pages
+    if: inputs.without_pages == false && !cancelled()
     steps:
-      - name: 🚀 Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
-  cleanup:
-    name: 🧹 Cleanup Artifacts
-    needs: [push_packages, deploy_pages]
+  clear_artifact:
+    needs: push_packages
     if: always()
-    runs-on: ubuntu-latest
+    name: Clearing Artifact
     permissions:
       actions: write
       contents: read
-      
+    runs-on: ubuntu-22.04
     steps:
-      - name: 🧹 Delete Old Workflow Runs
+      - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@v2
         with:
-          retain_days: 7
-          keep_minimum_runs: 5
-          delete_workflow_pattern: "AutoCompiler OpenWrt Packages"
-          
-      - name: 🗑️ Clean Build Artifacts
-        uses: geekyeggo/delete-artifact@v4
-        with:
-          name: openwrt_*
-          failOnError: false
-          
-      - name: 📊 Final Cleanup Summary
-        run: |
-          echo "::group::🧹 Cleanup Summary"
-          echo "✅ Old workflow runs cleaned (kept last 5 runs)"
-          echo "✅ Build artifacts removed"
-          echo "✅ Packages organized:"
-          echo "   📁 SNAPSHOT/ (APK packages from SNAPSHOT)"
-          echo "   📁 24.10/ (IPK packages from 24.10.x)"
-          echo "   📁 23.05/ (IPK packages from 23.05.x)"
-          echo "::endgroup::"
-
-  notify:
-    name: 📢 Notification
-    needs: [prepare, build_ipk, push_packages, deploy_pages]
-    if: always()
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: 📊 Workflow Summary
-        run: |
-          echo "## 🚀 OpenWrt Package Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Prepare | ${{ needs.prepare.result == 'success' && '✅' || '❌' }} ${{ needs.prepare.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔨 Build IPK | ${{ needs.build_ipk.result == 'success' && '✅' || '❌' }} ${{ needs.build_ipk.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚀 Push Packages | ${{ needs.push_packages.result == 'success' && '✅' || '❌' }} ${{ needs.push_packages.result }} |" >> $GITHUB_STEP_SUMMARY  
-          echo "| 🌐 Deploy Pages | ${{ needs.deploy_pages.result == 'success' && '✅' || needs.deploy_pages.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.deploy_pages.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**📦 Packages Built:** ${{ needs.prepare.outputs.packages }}" >> $GITHUB_STEP_SUMMARY
-          echo "**⏰ Completed:** $(date -u +%Y-%m-%d\ %H:%M:%S) UTC" >> $GITHUB_STEP_SUMMARY
+          retain_days: 5
+          keep_minimum_runs: 2
