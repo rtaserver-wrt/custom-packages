@@ -368,7 +368,7 @@ jobs:
 
   build_and_deploy_pages:
     needs: push_packages
-    if: inputs.without_pages == false && success()
+    if: inputs.without_pages == false && success() || failure()
     name: 🌐 Deploy to GitHub Pages
     permissions:
       pages: write
