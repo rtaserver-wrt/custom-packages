@@ -283,7 +283,11 @@ jobs:
           cd $SDK_PATH
           
           echo "Copying built packages..."
-          find bin/packages/${{ matrix.arch }}/custom/ -type f -name "*.ipk" -o -name "*.apk" -exec cp {} $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ \; 2>/dev/null || echo "No packages found to copy."
+          if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
+            find bin/packages/${{ matrix.arch }}/custom/ -type f -name "*.apk" -exec cp {} $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ \; 2>/dev/null || echo "No APK packages found to copy."
+          else
+            find bin/packages/custom/${{ matrix.arch }}/ -type f -name "*.ipk" -exec cp {} $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ \; 2>/dev/null || echo "No IPK packages found to copy."
+          fi
           
           echo "Copying build logs..."
           find logs/ -type f -name "*.log" -exec cp {} $GITHUB_WORKSPACE/artifacts/logs/ \; 2>/dev/null || true
