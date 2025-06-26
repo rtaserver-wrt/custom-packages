@@ -48,9 +48,6 @@ concurrency:
   group: auto-compiler-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  SDK_CACHE_DIR: ${{ runner.temp }}/openwrt-sdk-cache
-
 jobs:
   build_ipk:
     permissions:
@@ -60,11 +57,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: &releases
+        release:
           - SNAPSHOT
           - 24.10.2
           - 23.05.5
-        arch: &architectures
+        arch:
           - x86_64
           - mips_24kc
           - mipsel_24kc
