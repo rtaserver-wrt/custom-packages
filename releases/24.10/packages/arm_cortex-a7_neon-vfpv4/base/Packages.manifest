@@ -1,0 +1,247 @@
+Package: jshn
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libjson-c5, libubox20240329, libblobmsg-json20240329
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: utils
+SourceDateEpoch: 1749731634
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 30720
+Filename: jshn_2024.12.19~3868f47c-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 7171
+SHA256sum: 2c51f3c8772b86ea56bbdd70baf0174753f93e2894b01d49f701f237d4815da7
+Description:  Library for parsing and generating JSON from shell scripts
+
+Package: libblobmsg-json20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libjson-c5, libubox20240329
+Provides: libblobmsg-json
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: libs
+SourceDateEpoch: 1749731634
+ABIVersion: 20240329
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 20480
+Filename: libblobmsg-json20240329_2024.12.19~3868f47c-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 4234
+SHA256sum: 60f32f9d6412210f7c248947fc1da7146029d872113614e4eaf6f5038a472425
+Description:  blobmsg <-> json conversion library
+
+Package: libjson-c5
+Version: 0.18-r1
+Depends: libc
+Provides: libjson-c
+Source: feeds/base/package/libs/libjson-c
+SourceName: json-c
+License: MIT
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1728124160
+URL: https://json-c.github.io/json-c/
+ABIVersion: 5
+CPE-ID: cpe:/a:json-c:json-c
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 61440
+Filename: libjson-c5_0.18-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 25711
+SHA256sum: 7dc895f50bf4108c816d13043afd802acf17819e79424a183f1164e50a5f6945
+Description:  This package contains a library for javascript object notation backends.
+
+Package: libjson-script20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libubox20240329
+Provides: libjson-script
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: utils
+SourceDateEpoch: 1749731634
+ABIVersion: 20240329
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 20480
+Filename: libjson-script20240329_2024.12.19~3868f47c-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 4993
+SHA256sum: ce875338165235cb643b0dac06d896dba1ebf98f90f6cc0cc62725ea2a94d45f
+Description:  Minimalistic JSON based scripting engine
+
+Package: liblua5.1.5
+Version: 5.1.5-r11
+Depends: libc
+Provides: liblua
+Source: feeds/base/package/utils/lua
+SourceName: lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: libs
+SourceDateEpoch: 1708131321
+URL: https://www.lua.org/
+ABIVersion: 5.1.5
+CPE-ID: cpe:/a:lua:lua
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 133120
+Filename: liblua5.1.5_5.1.5-r11_arm_cortex-a7_neon-vfpv4.ipk
+Size: 61368
+SHA256sum: c30800d1f02072ff5929d45826eca4077856b9f027b7f70af0f7623c075ff9f0
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua shared libraries, needed by other programs.
+
+Package: libubox-lua
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libubox20240329, liblua5.1.5
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: libs
+SourceDateEpoch: 1749731634
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 20480
+Filename: libubox-lua_2024.12.19~3868f47c-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 5697
+SHA256sum: 1f53dbe272ab0191cc297f533c72fa242ec40289bcda7da4221f1be5696fbdcd
+Description:  Lua binding for the OpenWrt Basic utility library
+
+Package: libubox20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc
+Provides: libubox
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: libs
+SourceDateEpoch: 1749731634
+ABIVersion: 20240329
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 61440
+Filename: libubox20240329_2024.12.19~3868f47c-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 24931
+SHA256sum: 6c175514e3998ac0dfd981a9e2856e72b97bf3a77ac442306df5b2dccb761174
+Description:  Basic utility library
+
+Package: libuci-lua
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libuci20250120, liblua5.1.5
+Source: feeds/base/package/system/uci
+SourceName: uci
+License: LGPL-2.1
+Section: libs
+SourceDateEpoch: 1737407871
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 20480
+Filename: libuci-lua_2025.01.20~16ff0bad-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 6483
+SHA256sum: 4f4c1f34bd1a62d90e9857c39a266f0f95d79f1bfd6540006adf7af0f090f6df
+Description:  Lua plugin for UCI
+
+Package: libuci20250120
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libubox20240329
+Provides: libuci
+Source: feeds/base/package/system/uci
+SourceName: uci
+License: LGPL-2.1
+Section: libs
+SourceDateEpoch: 1737407871
+ABIVersion: 20250120
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 40960
+Filename: libuci20250120_2025.01.20~16ff0bad-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 16151
+SHA256sum: 2c5ad0f6c425b76ad5e80d0ec7eb9f685761c430fac92db40630f17f3e7f07c1
+Description:  C library for the Unified Configuration Interface (UCI)
+
+Package: lua-examples
+Version: 5.1.5-r11
+Depends: libc, lua
+Source: feeds/base/package/utils/lua
+SourceName: lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: lang
+SourceDateEpoch: 1708131321
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 30720
+Filename: lua-examples_5.1.5-r11_arm_cortex-a7_neon-vfpv4.ipk
+Size: 6206
+SHA256sum: 7bcc00d131db31199470d06a58024b91fd828358be5ea955fd75946310cae58e
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains Lua language examples.
+
+Package: lua
+Version: 5.1.5-r11
+Depends: libc, liblua5.1.5
+Source: feeds/base/package/utils/lua
+SourceName: lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: lang
+SourceDateEpoch: 1708131321
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 20480
+Filename: lua_5.1.5-r11_arm_cortex-a7_neon-vfpv4.ipk
+Size: 5514
+SHA256sum: 67a220b5a3ea5877aab8302dabbaf339f6430aecdefa71a0772ca1a111b0ff11
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language interpreter.
+
+Package: luac
+Version: 5.1.5-r11
+Depends: libc, liblua5.1.5
+Source: feeds/base/package/utils/lua
+SourceName: lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: lang
+SourceDateEpoch: 1708131321
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 20480
+Filename: luac_5.1.5-r11_arm_cortex-a7_neon-vfpv4.ipk
+Size: 6264
+SHA256sum: 9dcd626001900e77baa75eb3b25b6458827178e350b2e4973605ebd9e86a8029
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language compiler.
+
+Package: uci
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libuci20250120
+Source: feeds/base/package/system/uci
+SourceName: uci
+License: LGPL-2.1
+Section: base
+SourceDateEpoch: 1737407871
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 30720
+Filename: uci_2025.01.20~16ff0bad-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 7673
+SHA256sum: 0d106d9b872528d879fd5595d0f3842ad0f1c1f95b66ae84ba5a8b941ccf4d7b
+Description:  Utility for the Unified Configuration Interface (UCI)
+

@@ -1,0 +1,190 @@
+Package: jshn
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libjson-c5, libubox20240329, libblobmsg-json20240329
+License: ISC
+Section: utils
+Architecture: mipsel_24kc
+Installed-Size: 81920
+Filename: jshn_2024.12.19~3868f47c-r1_mipsel_24kc.ipk
+Size: 6691
+SHA256sum: 5bd66080ac499729ff2cce18e6a281c5a86e8a9fe9615dfa3597633c2097b963
+Description:  Library for parsing and generating JSON from shell scripts
+
+Package: libblobmsg-json20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libjson-c5, libubox20240329
+Provides: libblobmsg-json
+License: ISC
+Section: libs
+ABIVersion: 20240329
+Architecture: mipsel_24kc
+Installed-Size: 71680
+Filename: libblobmsg-json20240329_2024.12.19~3868f47c-r1_mipsel_24kc.ipk
+Size: 4633
+SHA256sum: 9708dad4fcdf0dbbb52e5dd2b32bd1f84ca4668101f1923d86d87b749453ac13
+Description:  blobmsg <-> json conversion library
+
+Package: libjson-c5
+Version: 0.18-r1
+Depends: libc
+Provides: libjson-c
+License: MIT
+Section: libs
+URL: https://json-c.github.io/json-c/
+ABIVersion: 5
+CPE-ID: cpe:/a:json-c:json-c
+Architecture: mipsel_24kc
+Installed-Size: 71680
+Filename: libjson-c5_0.18-r1_mipsel_24kc.ipk
+Size: 24640
+SHA256sum: a73411f0e724b6c99d85b961125022807396c43c824a223ed5120972996ef74c
+Description:  This package contains a library for javascript object notation backends.
+
+Package: libjson-script20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libubox20240329
+Provides: libjson-script
+License: ISC
+Section: utils
+ABIVersion: 20240329
+Architecture: mipsel_24kc
+Installed-Size: 71680
+Filename: libjson-script20240329_2024.12.19~3868f47c-r1_mipsel_24kc.ipk
+Size: 5332
+SHA256sum: d116328a93b16ce0651b1a2329bc7a7ad0edc7ba7b88b737368dc137deb21768
+Description:  Minimalistic JSON based scripting engine
+
+Package: liblua5.1.5
+Version: 5.1.5-r11
+Depends: libc
+Provides: liblua
+License: MIT
+Section: libs
+URL: https://www.lua.org/
+ABIVersion: 5.1.5
+CPE-ID: cpe:/a:lua:lua
+Architecture: mipsel_24kc
+Installed-Size: 143360
+Filename: liblua5.1.5_5.1.5-r11_mipsel_24kc.ipk
+Size: 63936
+SHA256sum: f45aa78c6ec8939a9ca90042776ad58aeea99c8e738f5043eb1d53a07a43bb29
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua shared libraries, needed by other programs.
+
+Package: libubox-lua
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libubox20240329, liblua5.1.5
+License: ISC
+Section: libs
+Architecture: mipsel_24kc
+Installed-Size: 71680
+Filename: libubox-lua_2024.12.19~3868f47c-r1_mipsel_24kc.ipk
+Size: 5287
+SHA256sum: fbdffb515c712ab08643c20459d2e542c726b2e164e17ec57b5dd46ccb49da34
+Description:  Lua binding for the OpenWrt Basic utility library
+
+Package: libubox20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc
+Provides: libubox
+License: ISC
+Section: libs
+ABIVersion: 20240329
+Architecture: mipsel_24kc
+Installed-Size: 71680
+Filename: libubox20240329_2024.12.19~3868f47c-r1_mipsel_24kc.ipk
+Size: 25894
+SHA256sum: 97dd00f94004e8457b191fb960e966aa11fd76e4fbc9d067b419d349cc23dd7b
+Description:  Basic utility library
+
+Package: libuci-lua
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libuci20250120, liblua5.1.5
+License: LGPL-2.1
+Section: libs
+Architecture: mipsel_24kc
+Installed-Size: 71680
+Filename: libuci-lua_2025.01.20~16ff0bad-r1_mipsel_24kc.ipk
+Size: 6684
+SHA256sum: 341787abb9071de7c1fc8f1ba253ecf8ce626245f61637e9dc886196c96b7525
+Description:  Lua plugin for UCI
+
+Package: libuci20250120
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libubox20240329
+Provides: libuci
+License: LGPL-2.1
+Section: libs
+ABIVersion: 20250120
+Architecture: mipsel_24kc
+Installed-Size: 71680
+Filename: libuci20250120_2025.01.20~16ff0bad-r1_mipsel_24kc.ipk
+Size: 15826
+SHA256sum: 877e663d1a6acfdd0635adc71b0c15e3ef95be0cfc044b78a66fef4870560699
+Description:  C library for the Unified Configuration Interface (UCI)
+
+Package: lua-examples
+Version: 5.1.5-r11
+Depends: libc, lua
+License: MIT
+Section: lang
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Architecture: mipsel_24kc
+Installed-Size: 30720
+Filename: lua-examples_5.1.5-r11_mipsel_24kc.ipk
+Size: 6194
+SHA256sum: b69c85b63a92bd7ef8e550429a8f7ba77ed6e89d56b0a09aa350c8b51fbe5f20
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains Lua language examples.
+
+Package: lua
+Version: 5.1.5-r11
+Depends: libc, liblua5.1.5
+License: MIT
+Section: lang
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Architecture: mipsel_24kc
+Installed-Size: 71680
+Filename: lua_5.1.5-r11_mipsel_24kc.ipk
+Size: 5389
+SHA256sum: 61470b8bee6127248aa81c8bd01a5fd9873c46b1c76e29210a5a17586f192546
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language interpreter.
+
+Package: luac
+Version: 5.1.5-r11
+Depends: libc, liblua5.1.5
+License: MIT
+Section: lang
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Architecture: mipsel_24kc
+Installed-Size: 71680
+Filename: luac_5.1.5-r11_mipsel_24kc.ipk
+Size: 6121
+SHA256sum: 459b4374858333b0e089b79f803e8a415c0b21540474779dfd8f42f9d08384bb
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language compiler.
+
+Package: uci
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libuci20250120
+License: LGPL-2.1
+Section: base
+Architecture: mipsel_24kc
+Installed-Size: 81920
+Filename: uci_2025.01.20~16ff0bad-r1_mipsel_24kc.ipk
+Size: 7215
+SHA256sum: db3e1193155dd25ba7424c034c56f2f832e48babd0aff1f57d2812810737aa43
+Description:  Utility for the Unified Configuration Interface (UCI)
+

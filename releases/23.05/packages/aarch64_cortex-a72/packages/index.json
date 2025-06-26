@@ -1,0 +1,1 @@
+{"architecture": "aarch64_cortex-a72", "packages":{"lua-bit32": "5.3.0-1", "luaposix": "35.1-1"}}

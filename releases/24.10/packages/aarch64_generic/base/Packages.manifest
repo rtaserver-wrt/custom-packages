@@ -1,0 +1,247 @@
+Package: jshn
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libjson-c5, libubox20240329, libblobmsg-json20240329
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: utils
+SourceDateEpoch: 1749731634
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_generic
+Installed-Size: 81920
+Filename: jshn_2024.12.19~3868f47c-r1_aarch64_generic.ipk
+Size: 7585
+SHA256sum: 20d1f12810db9d91f2b49cc5cb6f4ff7f853f8384b53e5061a64ade9d9a93019
+Description:  Library for parsing and generating JSON from shell scripts
+
+Package: libblobmsg-json20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libjson-c5, libubox20240329
+Provides: libblobmsg-json
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: libs
+SourceDateEpoch: 1749731634
+ABIVersion: 20240329
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_generic
+Installed-Size: 71680
+Filename: libblobmsg-json20240329_2024.12.19~3868f47c-r1_aarch64_generic.ipk
+Size: 5000
+SHA256sum: e9a564727bff727bb7af48cf3471786d95a6af8123e1b25625b0ec850aad8b75
+Description:  blobmsg <-> json conversion library
+
+Package: libjson-c5
+Version: 0.18-r1
+Depends: libc
+Provides: libjson-c
+Source: feeds/base/package/libs/libjson-c
+SourceName: json-c
+License: MIT
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1728124160
+URL: https://json-c.github.io/json-c/
+ABIVersion: 5
+CPE-ID: cpe:/a:json-c:json-c
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_generic
+Installed-Size: 143360
+Filename: libjson-c5_0.18-r1_aarch64_generic.ipk
+Size: 32254
+SHA256sum: 61a8eee9c84931da1a9ba852a2c6338a85406365562ed083933e4d218fbe87c6
+Description:  This package contains a library for javascript object notation backends.
+
+Package: libjson-script20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libubox20240329
+Provides: libjson-script
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: utils
+SourceDateEpoch: 1749731634
+ABIVersion: 20240329
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_generic
+Installed-Size: 71680
+Filename: libjson-script20240329_2024.12.19~3868f47c-r1_aarch64_generic.ipk
+Size: 6305
+SHA256sum: a34a55800c75ce7b2bc4b41828ad5eedc7947da53cd627daadc905de786149e2
+Description:  Minimalistic JSON based scripting engine
+
+Package: liblua5.1.5
+Version: 5.1.5-r11
+Depends: libc
+Provides: liblua
+Source: feeds/base/package/utils/lua
+SourceName: lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: libs
+SourceDateEpoch: 1708131321
+URL: https://www.lua.org/
+ABIVersion: 5.1.5
+CPE-ID: cpe:/a:lua:lua
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: aarch64_generic
+Installed-Size: 204800
+Filename: liblua5.1.5_5.1.5-r11_aarch64_generic.ipk
+Size: 79033
+SHA256sum: c76cfd0bd1a0a4a576e26e92c12c329e5ebf7132cf69af8a5325a8c8ad33e582
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua shared libraries, needed by other programs.
+
+Package: libubox-lua
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libubox20240329, liblua5.1.5
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: libs
+SourceDateEpoch: 1749731634
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_generic
+Installed-Size: 71680
+Filename: libubox-lua_2024.12.19~3868f47c-r1_aarch64_generic.ipk
+Size: 6103
+SHA256sum: bf89a27799883e4661d12bc1a817ccd35fa4a55a2cc8ca2982cd997e88e06409
+Description:  Lua binding for the OpenWrt Basic utility library
+
+Package: libubox20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc
+Provides: libubox
+Source: feeds/base/package/libs/libubox
+SourceName: libubox
+License: ISC
+Section: libs
+SourceDateEpoch: 1749731634
+ABIVersion: 20240329
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_generic
+Installed-Size: 71680
+Filename: libubox20240329_2024.12.19~3868f47c-r1_aarch64_generic.ipk
+Size: 32474
+SHA256sum: cdfcb75feb419702fa209b7b214e7110ee5eee48703404c2bfed81917f987774
+Description:  Basic utility library
+
+Package: libuci-lua
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libuci20250120, liblua5.1.5
+Source: feeds/base/package/system/uci
+SourceName: uci
+License: LGPL-2.1
+Section: libs
+SourceDateEpoch: 1737407871
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_generic
+Installed-Size: 71680
+Filename: libuci-lua_2025.01.20~16ff0bad-r1_aarch64_generic.ipk
+Size: 8309
+SHA256sum: 9a542c7be5ffff8c210bb69bfb62e51a9ad0a5dc305f398303a921195c629716
+Description:  Lua plugin for UCI
+
+Package: libuci20250120
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libubox20240329
+Provides: libuci
+Source: feeds/base/package/system/uci
+SourceName: uci
+License: LGPL-2.1
+Section: libs
+SourceDateEpoch: 1737407871
+ABIVersion: 20250120
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_generic
+Installed-Size: 71680
+Filename: libuci20250120_2025.01.20~16ff0bad-r1_aarch64_generic.ipk
+Size: 19192
+SHA256sum: c5229a373047769f73c3ea3fc59dbd1b0f6504ea58f661c7721f0d360cb2f18a
+Description:  C library for the Unified Configuration Interface (UCI)
+
+Package: lua-examples
+Version: 5.1.5-r11
+Depends: libc, lua
+Source: feeds/base/package/utils/lua
+SourceName: lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: lang
+SourceDateEpoch: 1708131321
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: aarch64_generic
+Installed-Size: 30720
+Filename: lua-examples_5.1.5-r11_aarch64_generic.ipk
+Size: 6194
+SHA256sum: c1b4081df14369efa515fa06d090f8f81824e793dcd9fb8f88e492307911b849
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains Lua language examples.
+
+Package: lua
+Version: 5.1.5-r11
+Depends: libc, liblua5.1.5
+Source: feeds/base/package/utils/lua
+SourceName: lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: lang
+SourceDateEpoch: 1708131321
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: aarch64_generic
+Installed-Size: 71680
+Filename: lua_5.1.5-r11_aarch64_generic.ipk
+Size: 5917
+SHA256sum: ea2912fc01b36688fd1046b15b255e19bac08a10eb7d7bcca04fb55d235d84f4
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language interpreter.
+
+Package: luac
+Version: 5.1.5-r11
+Depends: libc, liblua5.1.5
+Source: feeds/base/package/utils/lua
+SourceName: lua
+License: MIT
+LicenseFiles: COPYRIGHT
+Section: lang
+SourceDateEpoch: 1708131321
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: aarch64_generic
+Installed-Size: 71680
+Filename: luac_5.1.5-r11_aarch64_generic.ipk
+Size: 6522
+SHA256sum: 6d927af74a906dcb2aa2c98fe4f7d5286fbe32e8876cf90a2d87e384dccbaff0
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language compiler.
+
+Package: uci
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libuci20250120
+Source: feeds/base/package/system/uci
+SourceName: uci
+License: LGPL-2.1
+Section: base
+SourceDateEpoch: 1737407871
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: aarch64_generic
+Installed-Size: 81920
+Filename: uci_2025.01.20~16ff0bad-r1_aarch64_generic.ipk
+Size: 8056
+SHA256sum: 391a215f7452c15b14329050a7713026eca7127702d88debe33741cbbb7fecda
+Description:  Utility for the Unified Configuration Interface (UCI)
+

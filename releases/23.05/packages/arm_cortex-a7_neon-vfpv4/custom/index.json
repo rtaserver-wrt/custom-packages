@@ -1,0 +1,1 @@
+{"architecture": "arm_cortex-a7_neon-vfpv4", "packages":{"atinout": "0.9.1", "internet-detector": "1.5.1-15", "luci-app-internet-detector": "1.5.1", "luci-i18n-internet-detector-ru": "git-25.177.24023-e2a2b10"}}

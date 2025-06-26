@@ -1,0 +1,37 @@
+Package: lua-bit32
+Version: 5.3.0-r1
+Depends: libc, lua
+Source: feeds/packages/lang/lua-bit32
+SourceName: lua-bit32
+License: MIT
+LicenseFiles: LICENSE
+Section: lang
+SourceDateEpoch: 1750705303
+Maintainer: Maxim Storchak <m.storchak@gmail.com>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 20480
+Filename: lua-bit32_5.3.0-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 6993
+SHA256sum: 7e291f29c75a5c5ebec58baa8d5cc5f7bd80b2595f4d2c193ae758d17da36c0e
+Description:  lua-bit32 is the native Lua 5.2 bit manipulation library,
+ backported to Lua 5.1
+
+Package: luaposix
+Version: 36.2.1-r1
+Depends: libc, lua, lua-bit32
+Source: feeds/packages/lang/luaposix
+SourceName: luaposix
+License: MIT
+LicenseFiles: COPYING
+Section: lang
+SourceDateEpoch: 1750705303
+URL: https://github.com/luaposix/luaposix
+Maintainer: Maxim Storchak <m.storchak@gmail.com>
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 563200
+Filename: luaposix_36.2.1-r1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 116036
+SHA256sum: 1c34632a3d24e5dccf054bb9c1c881cde6d176259d030cdcc1ad394bf6d16e93
+Description:  luaposix is a general POSIX library for Lua providing access
+ to various low level libc functions.
+

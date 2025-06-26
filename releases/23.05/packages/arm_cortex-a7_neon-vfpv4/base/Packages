@@ -1,0 +1,185 @@
+Package: jshn
+Version: 2023-05-23-75a3b870-1
+Depends: libc, libjson-c5, libubox20230523, libblobmsg-json20230523
+License: ISC
+Section: utils
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 6501
+Filename: jshn_2023-05-23-75a3b870-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 7309
+SHA256sum: da606e4b01578d3c413191a23d03ce474875217b88d7c8f84aaec624bab3dce0
+Description:  Library for parsing and generating JSON from shell scripts
+
+Package: libblobmsg-json20230523
+Version: 2023-05-23-75a3b870-1
+Depends: libc, libjson-c5, libubox20230523
+Provides: libblobmsg-json
+License: ISC
+Section: libs
+ABIVersion: 20230523
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 3552
+Filename: libblobmsg-json20230523_2023-05-23-75a3b870-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 4314
+SHA256sum: ab16fa95e7e3e100510421cb429e96f5b7bf4975eac52a450ac79fe1db62357a
+Description:  blobmsg <-> json conversion library
+
+Package: libjson-c5
+Version: 0.16-3
+Depends: libc
+Provides: libjson-c
+License: MIT
+Section: libs
+ABIVersion: 5
+CPE-ID: cpe:/a:json-c:json-c
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 23383
+Filename: libjson-c5_0.16-3_arm_cortex-a7_neon-vfpv4.ipk
+Size: 24157
+SHA256sum: a6d6a0bfa20e0f5649cad146bbe3fbb3596b5eb9510372ca28268c1a9e838c05
+Description:  This package contains a library for javascript object notation backends.
+
+Package: libjson-script20230523
+Version: 2023-05-23-75a3b870-1
+Depends: libc, libubox20230523
+Provides: libjson-script
+License: ISC
+Section: utils
+ABIVersion: 20230523
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 4237
+Filename: libjson-script20230523_2023-05-23-75a3b870-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 4998
+SHA256sum: d63e9b9ad27adf389e10c121153744a81e7d4f982df7916f0b04a9caf70c7a54
+Description:  Minimalistic JSON based scripting engine
+
+Package: liblua5.1.5
+Version: 5.1.5-11
+Depends: libc
+Provides: liblua
+License: MIT
+Section: libs
+ABIVersion: 5.1.5
+CPE-ID: cpe:/a:lua:lua
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 60801
+Filename: liblua5.1.5_5.1.5-11_arm_cortex-a7_neon-vfpv4.ipk
+Size: 61538
+SHA256sum: d6aaad2b3b60646dd9a6605951ea36400cb516ea59bdb14b5fcf1af76fda60d8
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua shared libraries, needed by other programs.
+
+Package: libubox-lua
+Version: 2023-05-23-75a3b870-1
+Depends: libc, libubox20230523, liblua5.1.5
+License: ISC
+Section: libs
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 3741
+Filename: libubox-lua_2023-05-23-75a3b870-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 4512
+SHA256sum: 0748f3ab8d027086504fc43b77d06b2061662e55b6667ce0bcaf6d79814d97d5
+Description:  Lua binding for the OpenWrt Basic utility library
+
+Package: libubox20230523
+Version: 2023-05-23-75a3b870-1
+Depends: libc
+Provides: libubox
+License: ISC
+Section: libs
+ABIVersion: 20230523
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 18488
+Filename: libubox20230523_2023-05-23-75a3b870-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 19299
+SHA256sum: b3e4af39a9248b3466e90e9eaed43398d5c71b9d50388b08f4ea8d5007e3a40a
+Description:  Basic utility library
+
+Package: libuci-lua
+Version: 2023-08-10-5781664d-1
+Depends: libc, libuci20130104, liblua5.1.5
+License: LGPL-2.1
+Section: libs
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 5635
+Filename: libuci-lua_2023-08-10-5781664d-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 6396
+SHA256sum: 52d3786b3fc64cf396e1cc9fb79676e4a79dbb60a53e1b1c7231e20767335266
+Description:  Lua plugin for UCI
+
+Package: libuci20130104
+Version: 2023-08-10-5781664d-1
+Depends: libc, libubox20230523
+Provides: libuci
+License: LGPL-2.1
+Section: libs
+ABIVersion: 20130104
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 15325
+Filename: libuci20130104_2023-08-10-5781664d-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 16114
+SHA256sum: b57e348bcfb6a14788abf85f8597a638fa169e46e43932f823fb46005630a049
+Description:  C library for the Unified Configuration Interface (UCI)
+
+Package: lua-examples
+Version: 5.1.5-11
+Depends: libc, lua
+License: MIT
+Section: lang
+CPE-ID: cpe:/a:lua:lua
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 5290
+Filename: lua-examples_5.1.5-11_arm_cortex-a7_neon-vfpv4.ipk
+Size: 6187
+SHA256sum: 3319d12659cba0b2342524954bbf86e8a03548c0053622b0bf5dd3b89fb9d860
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains Lua language examples.
+
+Package: lua
+Version: 5.1.5-11
+Depends: libc, liblua5.1.5
+License: MIT
+Section: lang
+CPE-ID: cpe:/a:lua:lua
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 4635
+Filename: lua_5.1.5-11_arm_cortex-a7_neon-vfpv4.ipk
+Size: 5522
+SHA256sum: e6a5e6a5c9067aaf49ee02fee3f6adee4f65f328810a950d0f0659573a1dd861
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language interpreter.
+
+Package: luac
+Version: 5.1.5-11
+Depends: libc, liblua5.1.5
+License: MIT
+Section: lang
+CPE-ID: cpe:/a:lua:lua
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 5393
+Filename: luac_5.1.5-11_arm_cortex-a7_neon-vfpv4.ipk
+Size: 6269
+SHA256sum: de1a099da0f2186f404ebdd2639e81d354d938123a2f94caa4e3a87359b5e95f
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language compiler.
+
+Package: uci
+Version: 2023-08-10-5781664d-1
+Depends: libc, libuci20130104
+License: LGPL-2.1
+Section: base
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 6776
+Filename: uci_2023-08-10-5781664d-1_arm_cortex-a7_neon-vfpv4.ipk
+Size: 7584
+SHA256sum: a7c03ef2f8d34da073eeefa2425ce3985ca17c7c48aa39ad188b3a603e569da1
+Description:  Utility for the Unified Configuration Interface (UCI)
+

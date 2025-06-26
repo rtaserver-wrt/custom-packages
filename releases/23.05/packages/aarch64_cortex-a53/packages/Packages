@@ -1,0 +1,26 @@
+Package: lua-bit32
+Version: 5.3.0-1
+Depends: libc, lua
+License: MIT
+Section: lang
+Architecture: aarch64_cortex-a53
+Installed-Size: 8167
+Filename: lua-bit32_5.3.0-1_aarch64_cortex-a53.ipk
+Size: 8879
+SHA256sum: b48196511563fe3e87dc30fa851c393bf8a300fcc0771aca7402f4a17e98aa0d
+Description:  lua-bit32 is the native Lua 5.2 bit manipulation library,
+ backported to Lua 5.1
+
+Package: luaposix
+Version: 35.1-1
+Depends: libc, lua, lua-bit32
+License: MIT
+Section: lang
+Architecture: aarch64_cortex-a53
+Installed-Size: 240287
+Filename: luaposix_35.1-1_aarch64_cortex-a53.ipk
+Size: 236588
+SHA256sum: e85eea04c585fb30069d574dd4e760ca580124a1697d791530ede706551275e9
+Description:  luaposix is a general POSIX library for Lua providing access
+ to various low level libc functions.
+

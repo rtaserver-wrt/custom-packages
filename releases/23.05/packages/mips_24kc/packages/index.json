@@ -1,0 +1,1 @@
+{"architecture": "mips_24kc", "packages":{"lua-bit32": "5.3.0-1", "luaposix": "35.1-1"}}

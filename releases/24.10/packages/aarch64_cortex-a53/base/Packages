@@ -1,0 +1,190 @@
+Package: jshn
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libjson-c5, libubox20240329, libblobmsg-json20240329
+License: ISC
+Section: utils
+Architecture: aarch64_cortex-a53
+Installed-Size: 81920
+Filename: jshn_2024.12.19~3868f47c-r1_aarch64_cortex-a53.ipk
+Size: 7583
+SHA256sum: ed0156eae034e6bdebce16a2cdd0e912850a9868061b301157fa346cd63f4fdb
+Description:  Library for parsing and generating JSON from shell scripts
+
+Package: libblobmsg-json20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libjson-c5, libubox20240329
+Provides: libblobmsg-json
+License: ISC
+Section: libs
+ABIVersion: 20240329
+Architecture: aarch64_cortex-a53
+Installed-Size: 71680
+Filename: libblobmsg-json20240329_2024.12.19~3868f47c-r1_aarch64_cortex-a53.ipk
+Size: 4983
+SHA256sum: 4e137d6428371cdc527b63e0bc25493560eac783d6c2dd5f3028ab9a90e88503
+Description:  blobmsg <-> json conversion library
+
+Package: libjson-c5
+Version: 0.18-r1
+Depends: libc
+Provides: libjson-c
+License: MIT
+Section: libs
+URL: https://json-c.github.io/json-c/
+ABIVersion: 5
+CPE-ID: cpe:/a:json-c:json-c
+Architecture: aarch64_cortex-a53
+Installed-Size: 143360
+Filename: libjson-c5_0.18-r1_aarch64_cortex-a53.ipk
+Size: 32211
+SHA256sum: e790b3c2227707201c70e6710b9d152697db0d2a7120f7fd8ce230e81d79186f
+Description:  This package contains a library for javascript object notation backends.
+
+Package: libjson-script20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libubox20240329
+Provides: libjson-script
+License: ISC
+Section: utils
+ABIVersion: 20240329
+Architecture: aarch64_cortex-a53
+Installed-Size: 71680
+Filename: libjson-script20240329_2024.12.19~3868f47c-r1_aarch64_cortex-a53.ipk
+Size: 6299
+SHA256sum: eb770a7b30ef3dcdf09710b5d3db923793bc55629ce5a62dc0aa622fad7441c9
+Description:  Minimalistic JSON based scripting engine
+
+Package: liblua5.1.5
+Version: 5.1.5-r11
+Depends: libc
+Provides: liblua
+License: MIT
+Section: libs
+URL: https://www.lua.org/
+ABIVersion: 5.1.5
+CPE-ID: cpe:/a:lua:lua
+Architecture: aarch64_cortex-a53
+Installed-Size: 204800
+Filename: liblua5.1.5_5.1.5-r11_aarch64_cortex-a53.ipk
+Size: 78898
+SHA256sum: ea851ff6de79d7ff041b4ef65f2d0d770a9d5d0c06dfe72a18bcdc55f7e273ff
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua shared libraries, needed by other programs.
+
+Package: libubox-lua
+Version: 2024.12.19~3868f47c-r1
+Depends: libc, libubox20240329, liblua5.1.5
+License: ISC
+Section: libs
+Architecture: aarch64_cortex-a53
+Installed-Size: 71680
+Filename: libubox-lua_2024.12.19~3868f47c-r1_aarch64_cortex-a53.ipk
+Size: 6098
+SHA256sum: 91aa94642e4a4fcf6e2e69ebef7e659e55bf0cacfcd7e562803f50085ca0fa00
+Description:  Lua binding for the OpenWrt Basic utility library
+
+Package: libubox20240329
+Version: 2024.12.19~3868f47c-r1
+Depends: libc
+Provides: libubox
+License: ISC
+Section: libs
+ABIVersion: 20240329
+Architecture: aarch64_cortex-a53
+Installed-Size: 71680
+Filename: libubox20240329_2024.12.19~3868f47c-r1_aarch64_cortex-a53.ipk
+Size: 32460
+SHA256sum: 0ede14fbd32995e03d2560365f308dd453c37bf08ce8169fae2668c2930e4709
+Description:  Basic utility library
+
+Package: libuci-lua
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libuci20250120, liblua5.1.5
+License: LGPL-2.1
+Section: libs
+Architecture: aarch64_cortex-a53
+Installed-Size: 71680
+Filename: libuci-lua_2025.01.20~16ff0bad-r1_aarch64_cortex-a53.ipk
+Size: 8305
+SHA256sum: 50180497aa509d909a023251aa939aa945d439b94f784a35ff4babb9f1d3486c
+Description:  Lua plugin for UCI
+
+Package: libuci20250120
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libubox20240329
+Provides: libuci
+License: LGPL-2.1
+Section: libs
+ABIVersion: 20250120
+Architecture: aarch64_cortex-a53
+Installed-Size: 71680
+Filename: libuci20250120_2025.01.20~16ff0bad-r1_aarch64_cortex-a53.ipk
+Size: 19193
+SHA256sum: 26fe9683f4277682759825f7ae03d4af0df4967d6fe948b98a1a9d57080272d0
+Description:  C library for the Unified Configuration Interface (UCI)
+
+Package: lua-examples
+Version: 5.1.5-r11
+Depends: libc, lua
+License: MIT
+Section: lang
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Architecture: aarch64_cortex-a53
+Installed-Size: 30720
+Filename: lua-examples_5.1.5-r11_aarch64_cortex-a53.ipk
+Size: 6197
+SHA256sum: f5e6173d1306e7ceda13f434079c6d5533658f6d30a8f6d3c44051956ce3242e
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains Lua language examples.
+
+Package: lua
+Version: 5.1.5-r11
+Depends: libc, liblua5.1.5
+License: MIT
+Section: lang
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Architecture: aarch64_cortex-a53
+Installed-Size: 71680
+Filename: lua_5.1.5-r11_aarch64_cortex-a53.ipk
+Size: 5907
+SHA256sum: a9f0fb7a3591cb06d099e38e3d78ef2809d90751a49f3d97a3a65b6df9d07895
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language interpreter.
+
+Package: luac
+Version: 5.1.5-r11
+Depends: libc, liblua5.1.5
+License: MIT
+Section: lang
+URL: https://www.lua.org/
+CPE-ID: cpe:/a:lua:lua
+Architecture: aarch64_cortex-a53
+Installed-Size: 71680
+Filename: luac_5.1.5-r11_aarch64_cortex-a53.ipk
+Size: 6522
+SHA256sum: 1324b8e9afa59a2b90bf99aa8cc1d24027d61a3c48414b10e68e3e2615b2351b
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language compiler.
+
+Package: uci
+Version: 2025.01.20~16ff0bad-r1
+Depends: libc, libuci20250120
+License: LGPL-2.1
+Section: base
+Architecture: aarch64_cortex-a53
+Installed-Size: 81920
+Filename: uci_2025.01.20~16ff0bad-r1_aarch64_cortex-a53.ipk
+Size: 8037
+SHA256sum: ebd22de5a33c7c158c2de3a51bf19be7a63041c8b30f5f609944d630b95713b1
+Description:  Utility for the Unified Configuration Interface (UCI)
+

@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "architecture": "x86_64",
+  "packages": {
+    "lua-bit32": "5.3.0-r1",
+    "luaposix": "36.3-r1"
+  }
+}

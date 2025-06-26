@@ -1,0 +1,185 @@
+Package: jshn
+Version: 2023-05-23-75a3b870-1
+Depends: libc, libjson-c5, libubox20230523, libblobmsg-json20230523
+License: ISC
+Section: utils
+Architecture: aarch64_cortex-a53
+Installed-Size: 7119
+Filename: jshn_2023-05-23-75a3b870-1_aarch64_cortex-a53.ipk
+Size: 7755
+SHA256sum: a2cbfac35015a1e7236d3fd7f81fac658d39bfba9a3b9cd1a11bd0e5e9696f26
+Description:  Library for parsing and generating JSON from shell scripts
+
+Package: libblobmsg-json20230523
+Version: 2023-05-23-75a3b870-1
+Depends: libc, libjson-c5, libubox20230523
+Provides: libblobmsg-json
+License: ISC
+Section: libs
+ABIVersion: 20230523
+Architecture: aarch64_cortex-a53
+Installed-Size: 4379
+Filename: libblobmsg-json20230523_2023-05-23-75a3b870-1_aarch64_cortex-a53.ipk
+Size: 5006
+SHA256sum: 11365b7691f23d524cb39595173edeea5341a8254cadbd8d1687b6b0b2ca4a0b
+Description:  blobmsg <-> json conversion library
+
+Package: libjson-c5
+Version: 0.16-3
+Depends: libc
+Provides: libjson-c
+License: MIT
+Section: libs
+ABIVersion: 5
+CPE-ID: cpe:/a:json-c:json-c
+Architecture: aarch64_cortex-a53
+Installed-Size: 28901
+Filename: libjson-c5_0.16-3_aarch64_cortex-a53.ipk
+Size: 29704
+SHA256sum: 399909892267e86778ab3c6876555e5f3d8feff65594fe4f52b70b9587a979fe
+Description:  This package contains a library for javascript object notation backends.
+
+Package: libjson-script20230523
+Version: 2023-05-23-75a3b870-1
+Depends: libc, libubox20230523
+Provides: libjson-script
+License: ISC
+Section: utils
+ABIVersion: 20230523
+Architecture: aarch64_cortex-a53
+Installed-Size: 5671
+Filename: libjson-script20230523_2023-05-23-75a3b870-1_aarch64_cortex-a53.ipk
+Size: 6287
+SHA256sum: 9a249b5475a500063f2ebe0cecbc1f41730cfd99f730a864ab2951513b95f30e
+Description:  Minimalistic JSON based scripting engine
+
+Package: liblua5.1.5
+Version: 5.1.5-11
+Depends: libc
+Provides: liblua
+License: MIT
+Section: libs
+ABIVersion: 5.1.5
+CPE-ID: cpe:/a:lua:lua
+Architecture: aarch64_cortex-a53
+Installed-Size: 78140
+Filename: liblua5.1.5_5.1.5-11_aarch64_cortex-a53.ipk
+Size: 78983
+SHA256sum: cd159c295a6c2f7d72d963c67523fa145abcd398583ac5870f5c98a5d098c07e
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua shared libraries, needed by other programs.
+
+Package: libubox-lua
+Version: 2023-05-23-75a3b870-1
+Depends: libc, libubox20230523, liblua5.1.5
+License: ISC
+Section: libs
+Architecture: aarch64_cortex-a53
+Installed-Size: 4551
+Filename: libubox-lua_2023-05-23-75a3b870-1_aarch64_cortex-a53.ipk
+Size: 5151
+SHA256sum: 57ac13f77417a8a43dc8d041445febc405ab360a1dfd31498b337d9469c5bcd9
+Description:  Lua binding for the OpenWrt Basic utility library
+
+Package: libubox20230523
+Version: 2023-05-23-75a3b870-1
+Depends: libc
+Provides: libubox
+License: ISC
+Section: libs
+ABIVersion: 20230523
+Architecture: aarch64_cortex-a53
+Installed-Size: 24498
+Filename: libubox20230523_2023-05-23-75a3b870-1_aarch64_cortex-a53.ipk
+Size: 25152
+SHA256sum: 2b0a9ae137e87c169fdb78086dc37d27ff365800665ecc392fc2bbcf830e3146
+Description:  Basic utility library
+
+Package: libuci-lua
+Version: 2023-08-10-5781664d-1
+Depends: libc, libuci20130104, liblua5.1.5
+License: LGPL-2.1
+Section: libs
+Architecture: aarch64_cortex-a53
+Installed-Size: 7514
+Filename: libuci-lua_2023-08-10-5781664d-1_aarch64_cortex-a53.ipk
+Size: 8197
+SHA256sum: 00f53539f7b803aad10b5b2473f185e29bc65b5d25318e28b92f19e5a54ce995
+Description:  Lua plugin for UCI
+
+Package: libuci20130104
+Version: 2023-08-10-5781664d-1
+Depends: libc, libubox20230523
+Provides: libuci
+License: LGPL-2.1
+Section: libs
+ABIVersion: 20130104
+Architecture: aarch64_cortex-a53
+Installed-Size: 18300
+Filename: libuci20130104_2023-08-10-5781664d-1_aarch64_cortex-a53.ipk
+Size: 18986
+SHA256sum: 30cea5d33917d3f35f99b885773ac943d0f5756808cd5682844543325c19291e
+Description:  C library for the Unified Configuration Interface (UCI)
+
+Package: lua-examples
+Version: 5.1.5-11
+Depends: libc, lua
+License: MIT
+Section: lang
+CPE-ID: cpe:/a:lua:lua
+Architecture: aarch64_cortex-a53
+Installed-Size: 5290
+Filename: lua-examples_5.1.5-11_aarch64_cortex-a53.ipk
+Size: 6179
+SHA256sum: d3478bba159dd04817956a12fcf3a5f403f3203e6d633e70146df72bd6908d87
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains Lua language examples.
+
+Package: lua
+Version: 5.1.5-11
+Depends: libc, liblua5.1.5
+License: MIT
+Section: lang
+CPE-ID: cpe:/a:lua:lua
+Architecture: aarch64_cortex-a53
+Installed-Size: 5171
+Filename: lua_5.1.5-11_aarch64_cortex-a53.ipk
+Size: 5892
+SHA256sum: 042a26a3318ce3b2492a9574c99824df55e06dab97cbae740003b9b28ff7e853
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language interpreter.
+
+Package: luac
+Version: 5.1.5-11
+Depends: libc, liblua5.1.5
+License: MIT
+Section: lang
+CPE-ID: cpe:/a:lua:lua
+Architecture: aarch64_cortex-a53
+Installed-Size: 5649
+Filename: luac_5.1.5-11_aarch64_cortex-a53.ipk
+Size: 6471
+SHA256sum: ffe0e3860416ba4c74cff4772321889885b87250229c0d87b881f8d91b183d95
+Description:  Lua is a powerful light-weight programming language designed for extending 
+ applications. Lua is also frequently used as a general-purpose, stand-alone 
+ language. Lua is free software.
+ This package contains the Lua language compiler.
+
+Package: uci
+Version: 2023-08-10-5781664d-1
+Depends: libc, libuci20130104
+License: LGPL-2.1
+Section: base
+Architecture: aarch64_cortex-a53
+Installed-Size: 7296
+Filename: uci_2023-08-10-5781664d-1_aarch64_cortex-a53.ipk
+Size: 7968
+SHA256sum: 64130ce607a98cb8d8baf095c5e506adad317940a4224445b4d2a3872a14c3ad
+Description:  Utility for the Unified Configuration Interface (UCI)
+
