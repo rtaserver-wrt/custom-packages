@@ -282,13 +282,16 @@ jobs:
       - name: Generate Default Configuration
         run: |
           cd $SDK_PATH
+          make defconfig
 
-          echo "CONFIG_ALL_NONSHARED=n" > .config
-          echo "CONFIG_ALL_KMODS=n" >> .config
-          echo "CONFIG_ALL=n" >> .config
-          echo "CONFIG_AUTOREMOVE=n" >> .config
+      - name: Disable Package Signing
+        run: |
+          cd $SDK_PATH
+          
+          # Disable package signing to avoid key-build errors
           echo "CONFIG_SIGNED_PACKAGES=n" >> .config
-
+          
+          # Regenerate config to apply changes
           make defconfig
 
       - name: Build Packages
@@ -312,9 +315,19 @@ jobs:
           
           # Set environment variables for build
           export BUILD_LOG=1
+          export CONFIG_ALL_NONSHARED=n
+          export CONFIG_ALL_KMODS=n
+          export CONFIG_ALL=n
+          export CONFIG_AUTOREMOVE=n
+          export CONFIG_SIGNED_PACKAGES=n
           export FEEDNAME="custom"
           
           RET=0
+          
+          # Debug: Show available packages
+          echo "::group::Available packages in feeds"
+          ./scripts/feeds list | grep -E "^(custom|base)" || echo "No custom packages found in feeds"
+          echo "::endgroup::"
           
           if [ -n "$PACKAGES" ]; then
             # Build specific packages
@@ -333,8 +346,13 @@ jobs:
                   echo "::endgroup::"
                   continue
                 }
+                
+                # Check if package was actually built
+                echo "Checking for built package files..."
+                find bin/packages/ -name "*$PKG*" -type f 2>/dev/null || echo "No package files found for $PKG"
+                
               else
-                echo "::warning::Skipping $PKG due to unsupported architecture"
+                echo "::warning::Skipping $PKG due to unsupported architecture or package not found"
               fi
               
               echo "::endgroup::"
@@ -344,6 +362,12 @@ jobs:
             ./scripts/feeds install -p "$FEEDNAME" -f -a
             make package/compile $V -j$(nproc) || RET=$?
           fi
+          
+          # Debug: Show what was built
+          echo "::group::Build results"
+          echo "Packages in bin/packages/:"
+          find bin/packages/ -name "*.ipk" -o -name "*.apk" 2>/dev/null | head -20 || echo "No packages found"
+          echo "::endgroup::"
           
           # Create package index without signing
           if [ "$RET" -eq 0 ]; then
@@ -355,22 +379,24 @@ jobs:
               make package/index -j1 V=s CONFIG_SIGNED_PACKAGES=n || {
                 echo "APK package index creation failed, trying alternative method..."
                 # Alternative: create APK index manually
-                cd bin/packages/${{ matrix.arch }}/custom
-                if command -v apk &> /dev/null; then
-                  apk index -o APKINDEX.tar.gz *.apk 2>/dev/null || true
-                else
-                  # Fallback: create basic index
-                  find . -name "*.apk" -exec basename {} \; > APKINDEX.txt 2>/dev/null || true
-                fi
+                cd bin/packages/${{ matrix.arch }}/custom 2>/dev/null && {
+                  if command -v apk &> /dev/null; then
+                    apk index -o APKINDEX.tar.gz *.apk 2>/dev/null || true
+                  else
+                    # Fallback: create basic index
+                    find . -name "*.apk" -exec basename {} \; > APKINDEX.txt 2>/dev/null || true
+                  fi
+                } || echo "No custom package directory found for indexing"
               }
             else
               # For stable releases (IPK format), use ipkg indexing
               make package/index -j1 V=s CONFIG_SIGNED_PACKAGES=n || {
                 echo "IPK package index creation failed, trying alternative method..."
                 # Alternative: create IPK index manually
-                cd bin/packages/${{ matrix.arch }}/custom
-                ../../../scripts/ipkg-make-index.sh . > Packages 2>/dev/null || true
-                gzip -c Packages > Packages.gz 2>/dev/null || true
+                cd bin/packages/${{ matrix.arch }}/custom 2>/dev/null && {
+                  ../../../scripts/ipkg-make-index.sh . > Packages 2>/dev/null || true
+                  gzip -c Packages > Packages.gz 2>/dev/null || true
+                } || echo "No custom package directory found for indexing"
               }
             fi
             
@@ -388,14 +414,52 @@ jobs:
           mkdir -p ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}
           mkdir -p ${{ github.workspace }}/artifacts/logs
           
-          # Copy built packages
-          if [ -d "./bin/packages/${{ matrix.arch }}/custom" ]; then
-            cp -r ./bin/packages/${{ matrix.arch }}/custom/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/
+          # Debug: Show directory structure
+          echo "::group::Debug - Directory structure"
+          echo "Current directory: $(pwd)"
+          echo "Checking for packages in bin/packages/${{ matrix.arch }}/"
+          ls -la bin/packages/${{ matrix.arch }}/ 2>/dev/null || echo "Directory bin/packages/${{ matrix.arch }}/ does not exist"
+          
+          echo "Checking for any packages in bin/packages/"
+          find bin/packages/ -name "*.ipk" -o -name "*.apk" 2>/dev/null | head -10 || echo "No packages found"
+          
+          echo "Full bin directory structure:"
+          find bin/ -type f -name "*.ipk" -o -name "*.apk" 2>/dev/null || echo "No package files found in bin/"
+          echo "::endgroup::"
+          
+          # Copy built packages with better error handling
+          PACKAGES_COPIED=0
+          
+          # Check multiple possible locations for packages
+          for feed_dir in custom base packages luci routing telephony; do
+            if [ -d "./bin/packages/${{ matrix.arch }}/$feed_dir" ]; then
+              echo "Found packages in feed: $feed_dir"
+              # Create feed subdirectory
+              mkdir -p ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/$feed_dir
+              
+              # Copy packages if any exist
+              if ls ./bin/packages/${{ matrix.arch }}/$feed_dir/*.ipk >/dev/null 2>&1 || ls ./bin/packages/${{ matrix.arch }}/$feed_dir/*.apk >/dev/null 2>&1; then
+                cp -r ./bin/packages/${{ matrix.arch }}/$feed_dir/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/$feed_dir/ 2>/dev/null || true
+                PACKAGES_COPIED=1
+              fi
+            fi
+          done
+          
+          # Alternative: copy everything from the architecture directory if it exists
+          if [ "$PACKAGES_COPIED" -eq 0 ] && [ -d "./bin/packages/${{ matrix.arch }}" ]; then
+            echo "Copying all packages from architecture directory"
+            cp -r ./bin/packages/${{ matrix.arch }}/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || true
+            PACKAGES_COPIED=1
           fi
           
           # Copy logs if they exist
           if [ -d "./logs/package/feeds/custom" ]; then
             cp -r ./logs/package/feeds/custom/* ${{ github.workspace }}/artifacts/logs/ 2>/dev/null || true
+          fi
+          
+          # Copy any other logs
+          if [ -d "./logs" ]; then
+            find ./logs -name "*.log" -exec cp {} ${{ github.workspace }}/artifacts/logs/ \; 2>/dev/null || true
           fi
           
           # Determine package extension based on release
@@ -418,6 +482,11 @@ jobs:
           # Also show any other package files for debugging
           echo "All package files found:"
           find ${{ github.workspace }}/artifacts -name "*.ipk" -o -name "*.apk" | head -20
+          
+          # Show final artifacts structure
+          echo "::group::Final artifacts structure"
+          find ${{ github.workspace }}/artifacts -type f | head -20 || echo "No artifacts found"
+          echo "::endgroup::"
         
       - name: Delivering Package
         uses: actions/upload-artifact@v4
