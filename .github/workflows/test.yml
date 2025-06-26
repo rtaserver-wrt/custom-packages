@@ -281,6 +281,9 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/artifacts/logs
           
           cd $SDK_PATH
+
+          echo "✨ Bin Directory Structure:"
+          ls -R bin/packages
           
           echo "Copying built packages..."
           if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
@@ -291,7 +294,7 @@ jobs:
           
           echo "Copying build logs..."
           find logs/ -type f -name "*.log" -exec cp {} $GITHUB_WORKSPACE/artifacts/logs/ \; 2>/dev/null || true
-          
+
           echo "✨ Artifacts structure:"
           ls -R $GITHUB_WORKSPACE/artifacts
           echo "::endgroup::"
