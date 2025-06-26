@@ -231,7 +231,6 @@ jobs:
             echo "Copying custom package sources..."
             cp -r $GITHUB_WORKSPACE/package/* ./package/ 2>/dev/null || true
           fi
-          make defconfig
           echo "CONFIG_SIGNED_PACKAGES=n" >> .config
           make defconfig
           echo "✅ Default configuration generated."
@@ -286,11 +285,7 @@ jobs:
           ls -R bin/packages
           
           echo "Copying built packages..."
-          if [ "${{ matrix.release }}" = "SNAPSHOT" ]; then
-            find bin/packages/${{ matrix.arch }}/custom/ -type f -name "*.apk" -exec cp {} $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ \; 2>/dev/null || echo "No APK packages found to copy."
-          else
-            find bin/packages/custom/${{ matrix.arch }}/ -type f -name "*.ipk" -exec cp {} $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ \; 2>/dev/null || echo "No IPK packages found to copy."
-          fi
+          cp -r bin/packages/${{ matrix.arch }}/custom/* $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || echo "No custom packages found to copy."
           
           echo "Copying build logs..."
           find logs/ -type f -name "*.log" -exec cp {} $GITHUB_WORKSPACE/artifacts/logs/ \; 2>/dev/null || true
