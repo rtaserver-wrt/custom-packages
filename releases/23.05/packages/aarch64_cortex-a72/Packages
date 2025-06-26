@@ -4,10 +4,10 @@ Depends: libc
 License: GPLv2
 Section: net
 Architecture: aarch64_cortex-a72
-Installed-Size: 3475
+Installed-Size: 3473
 Filename: atinout_0.9.1_aarch64_cortex-a72.ipk
-Size: 4126
-SHA256sum: b4deafa6204a0685aff1c641cce8ce9b70e49efd8e051c673b0ebc9e20ef3a59
+Size: 4123
+SHA256sum: a101692f3024e2789eb2905e608468f5483b3a2383f39d26030fe0694fe7f039
 Description:  Atinout is a program that will execute AT commands in sequence and
  capture the response from the modem.
 
@@ -16,10 +16,10 @@ Version: 1.5.1-15
 Depends: libc, lua, luaposix, libuci-lua
 Section: net
 Architecture: all
-Installed-Size: 12157
+Installed-Size: 12153
 Filename: internet-detector_1.5.1-15_all.ipk
-Size: 13062
-SHA256sum: 8a0e53f73117c7a6751731e1d44d8f0d0572d54e9ba4099d328af51c2de83816
+Size: 13057
+SHA256sum: 2695cc8e72b7c24794e7b49ab6c884e90039b9fcbd1fd56202aaba29d24c82ab
 Description:  Internet-detector is a small daemon
  for checking Internet availability.
  Written in Lua using the luaposix library.
@@ -29,20 +29,20 @@ Version: 1.5.1
 Depends: libc, internet-detector
 Section: luci
 Architecture: all
-Installed-Size: 9453
+Installed-Size: 9448
 Filename: luci-app-internet-detector_1.5.1_all.ipk
-Size: 10325
-SHA256sum: d1eef22de88dba801953fba67c2534290905a202ac0205b0266831be9f90637b
+Size: 10317
+SHA256sum: 715b943ffc460a65879162877a51f6ca22d95734909bc188752d04b69d40c112
 Description:  LuCI support for internet-detector
 
 Package: luci-i18n-internet-detector-ru
-Version: git-25.177.32961-1733d09
+Version: git-25.177.34040-2eee195
 Depends: libc, luci-app-internet-detector
 Section: luci
 Architecture: all
-Installed-Size: 5138
-Filename: luci-i18n-internet-detector-ru_git-25.177.32961-1733d09_all.ipk
-Size: 5865
-SHA256sum: 45f0d9e004e621a4c0073ec97ac48ea9378007d0a4e5dd475f7a723fda31bde9
+Installed-Size: 5137
+Filename: luci-i18n-internet-detector-ru_git-25.177.34040-2eee195_all.ipk
+Size: 5868
+SHA256sum: 213ac5a3dc7de35245b4ee61977c010ab78a16c5016e10532cfe17a704e3d2bf
 Description:  Translation for luci-app-internet-detector - Русский (Russian)
 

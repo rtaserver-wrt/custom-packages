@@ -1,1 +1,1 @@
-{"architecture": "aarch64_cortex-a72", "packages":{"atinout": "0.9.1", "internet-detector": "1.5.1-15", "luci-app-internet-detector": "1.5.1", "luci-i18n-internet-detector-ru": "git-25.177.32961-1733d09"}}
+{"architecture": "aarch64_cortex-a72", "packages":{"atinout": "0.9.1", "internet-detector": "1.5.1-15", "luci-app-internet-detector": "1.5.1", "luci-i18n-internet-detector-ru": "git-25.177.34040-2eee195"}}
