@@ -335,7 +335,7 @@ jobs:
           # Create package index
           if [ "$RET" -eq 0 ]; then
             echo "::group::Creating package index"
-            make package/index $V
+            make package/index $V -j$(nproc)
             echo "::endgroup::"
           fi
           
@@ -385,7 +385,7 @@ jobs:
 
   push_packages:
     needs: build_ipk
-    if: success()
+    if: success() || failure()
     name: Push Packages 
     permissions:
       contents: write
