@@ -397,7 +397,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Delivering Package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: openwrt_${{ matrix.release }}_${{ matrix.arch }}
           path: ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/*
@@ -405,7 +405,7 @@ jobs:
 
       - name: Upload Build Logs
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build_logs_${{ matrix.release }}_${{ matrix.arch }}
           path: ${{ github.workspace }}/artifacts/logs/*
@@ -427,7 +427,7 @@ jobs:
           submodules: false
 
       - name: Download temporary artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Delete Logs
         run: sudo rm -rf build_logs*
