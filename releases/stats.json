@@ -1,8 +1,8 @@
 {
-  "generated": "2025-06-25T20:20:12Z",
-  "workflow_run": "6",
-  "commit": "c1d24785bb283ac348a766d4a6042a2c5e03e774",
-  "packages_built": "ariang internet-detector-mod-modem-restart watchdog cpufreq speedtestcli watchcat quectel-sprd-pcie modemband coremark xmm-modem quectel-cm 3proxy tun2socks internet-detector fibocom-qmi-wwan netspeedtest 3ginfo p910nd aria2 telegrambot internet-detector-mod-email 7z autoshare-samba tailscale quectel-qmi-wwan ookla-speedtest automount sms-tool dnsproxy speedtest-cli atinout modeminfo autoshare-ksmbd luci-app-oled luci-app-atcommands luci-app-rclone luci-app-watchcat luci-app-shutdown luci-app-lite-watchdog luci-app-sms-tool luci-mod-listening-ports luci-app-pppoe-relay luci-app-argon-config luci-app-modemband luci-app-amlogic luci-app-usb-printer luci-proto-xmm luci-app-netdata luci-app-3ginfo-lite luci-app-iperf3-server luci-proto-wwan luci-app-modeminfo luci-app-turboacc luci-app-cpu-status luci-app-macvlan luci-app-atinout luci-app-aria2 luci-app-poweroffdevice luci-app-cpufreq luci-app-iperf luci-proto-tun2socks luci-app-cpu-status-mini luci-app-autoreboot luci-app-filebrowser luci-app-smbuser luci-app-samba4 luci-app-ipinfo luci-app-disks-info luci-app-watchdog luci-app-droidnet luci-app-pppoe-server luci-app-eqosplus luci-theme-argon luci-app-ramfree luci-app-pptp-server luci-app-pptpd luci-app-tailscale luci-app-ksmbd luci-app-speedtest-web luci-app-diskman luci-app-adguardhome luci-app-droidmodem luci-app-temp-status luci-app-log luci-app-mac luci-app-sms-tool-js luci-app-zerotier luci-app-alpha-config luci-app-internet-detector luci-app-tinyfilemanager luci-app-change-mac luci-proto-quectel luci-app-cpulimit luci-app-telegrambot luci-app-netspeedtest luci-app-pppoe-user luci-app-interfaces-statistics",
+  "generated": "2025-06-26T02:30:54Z",
+  "workflow_run": "7",
+  "commit": "bcb293588020d1303ee66bd881ffa832c85c820c",
+  "packages_built": "atinout",
   "total_packages": 0,
   "versions": {}
 }
