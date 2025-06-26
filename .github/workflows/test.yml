@@ -219,9 +219,43 @@ jobs:
           df -h
           echo "::endgroup::"
 
-      - name: 🗂️ Create Artifacts Directory
+      - name: 🔧 Install Dependencies
         run: |
-          mkdir -p artifacts
+          echo "::group::🔧 Installing Build Dependencies"
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            ccache \
+            ecj \
+            fastjar \
+            file \
+            g++ \
+            gawk \
+            gettext \
+            git \
+            java-propose-classpath \
+            libelf-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libssl-dev \
+            python3 \
+            python3-distutils \
+            python3-setuptools \
+            rsync \
+            subversion \
+            swig \
+            time \
+            unzip \
+            zstd \
+            wget \
+            xsltproc \
+            zlib1g-dev
+          echo "::endgroup::"
+
+      - name: 🗂️ Create Build Environment
+        run: |
+          mkdir -p ${{ github.workspace }}/openwrt
+          mkdir -p ${{ github.workspace }}/artifacts
           echo "Build started: $(date)" > artifacts/build.log
          
       - name: 📦 List Packages to Build
@@ -233,19 +267,208 @@ jobs:
           echo "🔍 Verbose Level: ${{ inputs.verbose || '0' }}"
           echo "::endgroup::"
         
-      - name: 🏗️ Build OpenWrt Packages
-        uses: openwrt/gh-action-sdk@main
-        env:
-          ARCH: ${{ matrix.arch }}-${{ matrix.release }}
-          ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
-          FEED_DIR: ${{ github.workspace }}/feeds
-          PACKAGES: ${{ needs.prepare.outputs.packages }}
-          # INDEX: 1
-          V: ${{ inputs.verbose || '0' }}
-          IGNORE_ERRORS: true
-          NO_REFRESH_CHECK: true
-          CCACHE_DIR: ${{ runner.temp }}/ccache
-        
+      - name: 📥 Download OpenWrt SDK
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          echo "::group::📥 Downloading OpenWrt SDK"
+
+          # Tentukan base URL
+          case "${{ matrix.release }}" in
+            "SNAPSHOT")
+              SDK_URL="https://downloads.openwrt.org/snapshots/targets"
+              SDK_EXT="tar.zst"
+              ;;
+            "24.10.2")
+              SDK_URL="https://downloads.openwrt.org/releases/24.10.2/targets"
+              SDK_EXT="tar.zst"
+              ;;
+            "23.05.5")
+              SDK_URL="https://downloads.openwrt.org/releases/23.05.5/targets"
+              SDK_EXT="tar.xz"
+              ;;
+            *)
+              echo "❌ Unsupported release: ${{ matrix.release }}"
+              exit 1
+              ;;
+          esac
+
+          # Map arsitektur ke target/subtarget
+          case "${{ matrix.arch }}" in
+            "x86_64")
+              TARGET="x86/64"
+              ;;
+            "mips_24kc")
+              TARGET="ath79/generic"
+              ;;
+            "mipsel_24kc")
+              TARGET="ramips/mt7621"
+              ;;
+            "arm_cortex-a7_neon-vfpv4")
+              TARGET="bcm27xx/bcm2709"
+              ;;
+            "aarch64_cortex-a53")
+              TARGET="bcm27xx/bcm2710"
+              ;;
+            "aarch64_cortex-a72")
+              TARGET="bcm27xx/bcm2711"
+              ;;
+            "aarch64_generic")
+              TARGET="armsr/armv8"
+              ;;
+            *)
+              echo "❌ Unsupported architecture: ${{ matrix.arch }}"
+              exit 1
+              ;;
+          esac
+
+          FULL_URL="${SDK_URL}/${TARGET}"
+          echo "🔍 Searching SDK in: $FULL_URL"
+
+          # Ambil nama SDK dari halaman (berdasarkan ekstensi)
+          SDK_FILE=$(curl -s "$FULL_URL/" | grep -oE "openwrt-sdk.*${{ matrix.arch }}.*\.${SDK_EXT}" | head -1)
+
+          if [ -z "$SDK_FILE" ]; then
+            echo "❌ SDK file not found for release ${{ matrix.release }} and arch ${{ matrix.arch }}"
+            exit 1
+          fi
+
+          echo "📥 Found SDK: $SDK_FILE"
+          SDK_DOWNLOAD_URL="${FULL_URL}/${SDK_FILE}"
+
+          echo "🌐 Downloading: $SDK_DOWNLOAD_URL"
+          wget -O sdk.tar.${SDK_EXT} "$SDK_DOWNLOAD_URL"
+
+          echo "📂 Extracting SDK..."
+          if [[ "$SDK_EXT" == "tar.zst" ]]; then
+            tar --use-compress-program=unzstd -xf sdk.tar.zst --strip-components=1
+          else
+            tar -xf sdk.tar.xz --strip-components=1
+          fi
+
+          rm sdk.tar.*
+
+          echo "✅ SDK ready"
+          echo "::endgroup::"
+
+
+      - name: 🔧 Setup SDK Environment
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          echo "::group::🔧 Setting up SDK Environment"
+          
+          # Setup ccache
+          export CCACHE_DIR="${{ runner.temp }}/ccache"
+          mkdir -p "$CCACHE_DIR"
+          
+          # Copy custom feeds
+          if [ -d "${{ github.workspace }}/feeds" ]; then
+            echo "📦 Copying custom feeds..."
+            cp -r ${{ github.workspace }}/feeds/* ./feeds/ 2>/dev/null || true
+          fi
+          
+          # Update feeds
+          echo "🔄 Updating feeds..."
+          ./scripts/feeds update -a
+          
+          # Install packages from feeds
+          if [ -n "${{ needs.prepare.outputs.packages }}" ]; then
+            echo "📦 Installing packages: ${{ needs.prepare.outputs.packages }}"
+            for pkg in ${{ needs.prepare.outputs.packages }}; do
+              ./scripts/feeds install "$pkg" || echo "⚠️ Failed to install $pkg"
+            done
+          fi
+          
+          echo "✅ SDK environment setup complete"
+          echo "::endgroup::"
+
+      - name: 📋 Configure Build
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          echo "::group::📋 Configuring Build"
+          
+          # Create basic config
+          cat > .config << EOF
+          CONFIG_DEVEL=y
+          CONFIG_TOOLCHAINOPTS=y
+          CONFIG_BUSYBOX_CUSTOM=y
+          CONFIG_TARGET_OPTIONS=y
+          EOF
+          
+          # Add package selections
+          if [ -n "${{ needs.prepare.outputs.packages }}" ]; then
+            for pkg in ${{ needs.prepare.outputs.packages }}; do
+              echo "CONFIG_PACKAGE_${pkg}=m" >> .config
+            done
+          fi
+          
+          # Expand configuration
+          make defconfig V=${{ inputs.verbose || '0' }}
+          
+          echo "✅ Build configuration complete"
+          echo "::endgroup::"
+
+      - name: 🔨 Build Packages
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          echo "::group::🔨 Building Packages"
+          
+          # Setup environment variables
+          export CCACHE_DIR="${{ runner.temp }}/ccache"
+          export FORCE_UNSAFE_CONFIGURE=1
+          export V=${{ inputs.verbose || '0' }}
+          
+          # Build packages
+          if [ -n "${{ needs.prepare.outputs.packages }}" ]; then
+            for pkg in ${{ needs.prepare.outputs.packages }}; do
+              echo "🔨 Building package: $pkg"
+              make package/${pkg}/compile V=${{ inputs.verbose || '0' }} -j$(nproc) || {
+                echo "❌ Failed to build $pkg"
+                [ "${{ inputs.verbose || '0' }}" != "0" ] && make package/${pkg}/compile V=s
+                continue
+              }
+            done
+          else
+            echo "🔨 Building all available packages..."
+            make package/compile V=${{ inputs.verbose || '0' }} -j$(nproc) || {
+              echo "❌ Some packages failed to build"
+              [ "${{ inputs.verbose || '0' }}" != "0" ] && make package/compile V=s
+            }
+          fi
+          
+          echo "✅ Package build complete"
+          echo "::endgroup::"
+
+      - name: 📦 Collect Built Packages
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          echo "::group::📦 Collecting Built Packages"
+          
+          # Create artifacts directory structure
+          ARTIFACTS_DIR="${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}"
+          mkdir -p "$ARTIFACTS_DIR"
+          
+          # Find and copy packages
+          if [ -d "bin/packages/${{ matrix.arch }}" ]; then
+            # Copy packages, excluding routing and telephony
+            find bin/packages/${{ matrix.arch }} -name "*.ipk" -o -name "*.apk" | \
+            grep -v -E "(routing|telephony)" | \
+            while read pkg; do
+              cp "$pkg" "$ARTIFACTS_DIR/" 2>/dev/null || true
+            done
+          fi
+          
+          # Also check for packages in bin/targets if they exist
+          if [ -d "bin/targets" ]; then
+            find bin/targets -name "*.ipk" -o -name "*.apk" | \
+            grep -v -E "(routing|telephony)" | \
+            while read pkg; do
+              cp "$pkg" "$ARTIFACTS_DIR/" 2>/dev/null || true
+            done
+          fi
+          
+          echo "✅ Package collection complete"
+          echo "::endgroup::"
+
       - name: 📊 Build Summary
         if: always()
         run: |
@@ -284,6 +507,12 @@ jobs:
             if [ -f "artifacts/build.log" ]; then
               echo "📋 Last 10 lines of build log:"
               tail -10 artifacts/build.log || true
+            fi
+            
+            # Show build logs if verbose
+            if [ "${{ inputs.verbose || '0' }}" != "0" ] && [ -d "${{ github.workspace }}/openwrt/logs" ]; then
+              echo "📋 Build logs:"
+              find "${{ github.workspace }}/openwrt/logs" -name "*.log" -exec echo "=== {} ===" \; -exec tail -5 {} \;
             fi
           fi
           
