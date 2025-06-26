@@ -427,31 +427,15 @@ jobs:
           find bin/ -type f -name "*.ipk" -o -name "*.apk" 2>/dev/null || echo "No package files found in bin/"
           echo "::endgroup::"
           
-          # Copy built packages with better error handling
-          PACKAGES_COPIED=0
-          
-          # Check multiple possible locations for packages
-          for feed_dir in custom base packages luci routing telephony; do
-            if [ -d "./bin/packages/${{ matrix.arch }}/$feed_dir" ]; then
-              echo "Found packages in feed: $feed_dir"
-              # Create feed subdirectory
-              mkdir -p ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/$feed_dir
-              
-              # Copy packages if any exist
-              if ls ./bin/packages/${{ matrix.arch }}/$feed_dir/*.ipk >/dev/null 2>&1 || ls ./bin/packages/${{ matrix.arch }}/$feed_dir/*.apk >/dev/null 2>&1; then
-                cp -r ./bin/packages/${{ matrix.arch }}/$feed_dir/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/$feed_dir/ 2>/dev/null || true
-                PACKAGES_COPIED=1
-              fi
-            fi
-          done
-          
-          # Alternative: copy everything from the architecture directory if it exists
-          if [ "$PACKAGES_COPIED" -eq 0 ] && [ -d "./bin/packages/${{ matrix.arch }}" ]; then
-            echo "Copying all packages from architecture directory"
-            cp -r ./bin/packages/${{ matrix.arch }}/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || true
-            PACKAGES_COPIED=1
+          # Copy all packages from the architecture directory to artifacts
+          echo "Copying all packages from architecture directory"
+          if [ -d "./bin/packages/${{ matrix.arch }}/custom" ]; then
+            echo "Found custom packages directory"
+            cp -r ./bin/packages/${{ matrix.arch }}/custom/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || true
+          else
+            echo "No custom packages directory found, skipping copy"
           fi
-          
+
           # Copy logs if they exist
           if [ -d "./logs/package/feeds/custom" ]; then
             cp -r ./logs/package/feeds/custom/* ${{ github.workspace }}/artifacts/logs/ 2>/dev/null || true
