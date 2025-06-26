@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "architecture": "x86_64",
+  "packages": {
+    "atinout": "0.9.1",
+    "internet-detector": "1.5.1-r15",
+    "luci-app-internet-detector": "1.5.1-r14",
+    "luci-i18n-internet-detector-ru": "25.177.20643~58630ec"
+  }
+}

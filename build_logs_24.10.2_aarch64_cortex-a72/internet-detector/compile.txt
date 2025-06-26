@@ -1,0 +1,2 @@
+Packaged contents of /home/runner/work/custom-packages/custom-packages/openwrt-sdk/build_dir/target-aarch64_cortex-a72_musl/internet-detector-1.5.1/ipkg-all/internet-detector into /home/runner/work/custom-packages/custom-packages/openwrt-sdk/bin/packages/aarch64_cortex-a72/custom/internet-detector_1.5.1-r15_all.ipk
+time: package/feeds/custom/internet-detector/compile#0.30#0.50#0.67
