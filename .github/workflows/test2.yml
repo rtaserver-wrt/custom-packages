@@ -19,13 +19,13 @@ on:
   workflow_dispatch:
     inputs:
       compile_pkg:
-        description: 'Compile packages (default : all packages on list_packages.txt)'
+        description: 'Compile packages (default: all packages on list_packages.txt)'
         required: false
         default: ''
         type: string
         
       verbose:
-        description: 'Verbose (default : 0)'
+        description: 'Verbose (default: 0)'
         required: false
         default: '0'
         type: choice
@@ -85,12 +85,20 @@ jobs:
           
           # Check for packages directory and find subdirectories (actual packages)
           if [ -d "$GITHUB_WORKSPACE/feeds/packages" ]; then
-            _packages="$(find $GITHUB_WORKSPACE/feeds/packages -mindepth 1 -maxdepth 1 -type d -not -name ".*" | xargs -I {} basename {} | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+            _packages="$(find $GITHUB_WORKSPACE/feeds/packages -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
+              if [ -f "$pkg_dir/Makefile" ]; then
+                basename "$pkg_dir"
+              fi
+            done | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
           fi
           
           # Check for luci directory and find subdirectories (actual packages)
           if [ -d "$GITHUB_WORKSPACE/feeds/luci" ]; then
-            _luci="$(find $GITHUB_WORKSPACE/feeds/luci -mindepth 1 -maxdepth 1 -type d -not -name ".*" | xargs -I {} basename {} | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+            _luci="$(find $GITHUB_WORKSPACE/feeds/luci -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
+              if [ -f "$pkg_dir/Makefile" ]; then
+                basename "$pkg_dir"
+              fi
+            done | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
           fi
           
           # Log findings
@@ -125,7 +133,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev \
             zlib1g-dev gawk git gettext libssl-dev xsltproc rsync wget unzip python3 \
-            python3-distutils subversion zstd
+            python3-distutils subversion zstd file libelf-dev
         
       - name: Download and Setup OpenWrt SDK
         run: |
@@ -215,8 +223,8 @@ jobs:
           
           echo "Extracting SDK..."
           if [[ "$FILE_EXT" == "tar.zst" ]]; then
-            if command -v tar &> /dev/null && tar --use-compress-program=unzstd -tf sdk.tar.zst; then
-              tar --use-compress-program=unzstd -xf sdk.tar.zst
+            if command -v tar &> /dev/null && tar --use-compress-program=zstd -tf sdk.tar.zst >/dev/null 2>&1; then
+              tar --use-compress-program=zstd -xf sdk.tar.zst
             else
               zstd -d "sdk.${FILE_EXT}" -o sdk.tar
               tar -xf sdk.tar
@@ -234,18 +242,21 @@ jobs:
         run: |
           cd $SDK_PATH
           
-          # Copy custom feeds from repository
-          if [ -d "${{ github.workspace }}/feeds/packages" ]; then
-            echo "Copying custom packages feed..."
-            rm -rf ./feeds/packages
-            cp -r ${{ github.workspace }}/feeds/packages ./feeds/
+          # Setup feeds.conf with custom feeds
+          if [ -z "$NO_DEFAULT_FEEDS" ]; then
+            sed \
+              -e 's,https://git.openwrt.org/feed/,https://github.com/openwrt/,' \
+              -e 's,https://git.openwrt.org/openwrt/,https://github.com/openwrt/,' \
+              -e 's,https://git.openwrt.org/project/,https://github.com/openwrt/,' \
+              feeds.conf.default > feeds.conf
           fi
           
-          if [ -d "${{ github.workspace }}/feeds/luci" ]; then
-            echo "Copying custom luci feed..."
-            rm -rf ./feeds/luci
-            cp -r ${{ github.workspace }}/feeds/luci ./feeds/
-          fi
+          # Add custom feeds
+          FEEDNAME="custom"
+          echo "src-link $FEEDNAME ${{ github.workspace }}/feeds/" >> feeds.conf
+          
+          echo "Feed configuration:"
+          cat feeds.conf
           
           # Update and install feeds
           ./scripts/feeds update -a
@@ -260,49 +271,7 @@ jobs:
             echo "Copying root package directory..."
             cp -r ${{ github.workspace }}/package/* ./package/ 2>/dev/null || true
           fi
-          
-          # Copy additional packages from feeds/packages
-          if [ -d "${{ github.workspace }}/feeds/packages" ]; then
-            echo "Copying packages from feeds/packages..."
-            # Find all package directories in feeds/packages and copy them
-            find ${{ github.workspace }}/feeds/packages -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
-              if [ -f "$pkg_dir/Makefile" ]; then
-                pkg_name=$(basename "$pkg_dir")
-                category=$(basename "$(dirname "$pkg_dir")")
-                
-                # Create category directory if it doesn't exist
-                mkdir -p "./feeds/packages/$category"
-                cp -r "$pkg_dir" "./feeds/packages/$category/"
-                
-                echo "Copied package: $category/$pkg_name"
-              fi
-            done
-          fi
-          
-          # Copy additional packages from feeds/luci
-          if [ -d "${{ github.workspace }}/feeds/luci" ]; then
-            echo "Copying packages from feeds/luci..."
-            # Find all package directories in feeds/luci and copy them
-            find ${{ github.workspace }}/feeds/luci -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
-              if [ -f "$pkg_dir/Makefile" ]; then
-                pkg_name=$(basename "$pkg_dir")
-                category=$(basename "$(dirname "$pkg_dir")")
-                
-                # Create category directory if it doesn't exist
-                mkdir -p "./feeds/luci/$category"
-                cp -r "$pkg_dir" "./feeds/luci/$category/"
-                
-                echo "Copied package: $category/$pkg_name"
-              fi
-            done
-          fi
-          
-          # List available packages
-          echo "Available packages:"
-          find ./feeds/packages -name "Makefile" -path "*/Makefile" | sed 's|./feeds/packages/||' | sed 's|/Makefile||' | sort || true
-          find ./feeds/luci -name "Makefile" -path "*/Makefile" | sed 's|./feeds/luci/||' | sed 's|/Makefile||' | sort || true
 
-      # Add this step to generate default configuration
       - name: Generate Default Configuration
         run: |
           cd $SDK_PATH
@@ -327,50 +296,99 @@ jobs:
           
           echo "Building packages: $PACKAGES"
           
-          # Build each package
+          # Set environment variables for build
+          export BUILD_LOG=1
+          export CONFIG_AUTOREMOVE=y
+          export FEEDNAME="custom"
+          
+          RET=0
+          
           if [ -n "$PACKAGES" ]; then
-            for pkg in $PACKAGES; do
-              echo "Building package: $pkg"
-              make package/$pkg/compile $V || {
-                echo "Failed to build package: $pkg"
-                continue
-              }
+            # Build specific packages
+            for PKG in $PACKAGES; do
+              echo "::group::Building package: $PKG"
+              
+              # Install package from custom feed
+              ./scripts/feeds install -p "$FEEDNAME" -f "$PKG" || true
+              
+              # Check if package is available for this architecture
+              if make -f .config -f tmp/.packagedeps -f <(echo "\$(info \$(sort \$(package-y) \$(package-m)))"; echo -en "a:\n\t@:") 2>/dev/null | tr ' ' '\n' | grep -qE "(^|/)$PKG$"; then
+                echo "Building $PKG..."
+                make package/$PKG/compile $V -j$(nproc) || {
+                  echo "Failed to build package: $PKG"
+                  RET=1
+                  echo "::endgroup::"
+                  continue
+                }
+              else
+                echo "::warning::Skipping $PKG due to unsupported architecture"
+              fi
+              
+              echo "::endgroup::"
             done
           else
-            echo "No packages specified, building all"
-            make package/compile $V
+            echo "No specific packages specified, building all custom packages"
+            ./scripts/feeds install -p "$FEEDNAME" -f -a
+            make package/compile $V -j$(nproc) || RET=$?
           fi
           
           # Create package index
-          make package/index $V
+          if [ "$RET" -eq 0 ]; then
+            echo "::group::Creating package index"
+            make package/index $V
+            echo "::endgroup::"
+          fi
+          
+          exit $RET
 
       - name: Copy Built Packages
+        if: success() || failure()
         run: |
           cd $SDK_PATH
           
           # Create artifacts directory structure
           mkdir -p ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}
+          mkdir -p ${{ github.workspace }}/artifacts/logs
           
           # Copy built packages
           if [ -d "./bin/packages/${{ matrix.arch }}" ]; then
             cp -r ./bin/packages/${{ matrix.arch }}/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/
           fi
           
+          # Copy logs if they exist
+          if [ -d "./logs" ]; then
+            cp -r ./logs/* ${{ github.workspace }}/artifacts/logs/ 2>/dev/null || true
+          fi
+          
           # List built packages
           echo "Built packages:"
-          find ${{ github.workspace }}/artifacts -name "*.ipk" -type f
+          find ${{ github.workspace }}/artifacts -name "*.ipk" -type f | head -20
+          
+          # Count built packages
+          PKG_COUNT=$(find ${{ github.workspace }}/artifacts -name "*.ipk" -type f | wc -l)
+          echo "Total packages built: $PKG_COUNT"
         
       - name: Delivering Package
         uses: actions/upload-artifact@v4
         with:
           name: openwrt_${{ matrix.release }}_${{ matrix.arch }}
           path: ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/*
+          retention-days: 30
+
+      - name: Upload Build Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build_logs_${{ matrix.release }}_${{ matrix.arch }}
+          path: ${{ github.workspace }}/artifacts/logs/*
+          retention-days: 7
 
   push_packages:
     needs: build_ipk
+    if: success()
     name: Push Packages 
     permissions:
-      contents: write  # To push a branch
+      contents: write
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -386,27 +404,32 @@ jobs:
       - name: Moving artifact to releases
         shell: bash
         run: |
-          # rm -rf releases/*
           mkdir -p releases 2>/dev/null
           version=( SNAPSHOT 24.10.2 23.05.5 )
           archi=( x86_64 mips_24kc mipsel_24kc arm_cortex-a7_neon-vfpv4 aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic )
-          for vr in ${version[*]} 
-            do
-              if [[ "$vr" == "SNAPSHOT" ]]; then
-                vers="snapshot"
-              else
-                vers=$(echo $vr | sed 's/..$//')
-              fi
-              for arc in ${archi[*]} 
-                do
-                  rm -rf releases/$vers/packages/$arc
-                  mkdir -p releases/$vers/packages/$arc
-                  cp -rf openwrt_$vr\_$arc/* releases/$vers/packages/$arc
-                  rm -rf releases/$vers/packages/$arc/routing releases/$vers/packages/$arc/telephony
-                done
-            done
           
-          rm -rf openwrt_* 2>/dev/null
+          for vr in ${version[*]}; do
+            if [[ "$vr" == "SNAPSHOT" ]]; then
+              vers="snapshot"
+            else
+              vers=$(echo $vr | sed 's/..$//')
+            fi
+            
+            for arc in ${archi[*]}; do
+              artifact_dir="openwrt_${vr}_${arc}"
+              if [ -d "$artifact_dir" ]; then
+                rm -rf releases/$vers/packages/$arc
+                mkdir -p releases/$vers/packages/$arc
+                cp -rf $artifact_dir/* releases/$vers/packages/$arc/
+                # Remove routing and telephony if they exist
+                rm -rf releases/$vers/packages/$arc/routing releases/$vers/packages/$arc/telephony
+              else
+                echo "Warning: Artifact directory $artifact_dir not found"
+              fi
+            done
+          done
+          
+          rm -rf openwrt_* 2>/dev/null || true
           
       - name: Display structure files
         working-directory: releases
@@ -419,12 +442,16 @@ jobs:
           git config --local user.name "GitHub Action"
           git config --local user.email "actions-user@users.noreply.github.com"
           git add .
-          git commit -m "Update Packages"
-          git push
+          if ! git diff --staged --quiet; then
+            git commit -m "Update Packages - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            git push
+          else
+            echo "No changes to commit"
+          fi
           
   build_pages:
     needs: push_packages
-    if: inputs.without_pages == 0 && !cancelled()
+    if: inputs.without_pages == false && !cancelled()
     name: Building pages
     permissions:
       contents: write
@@ -447,7 +474,13 @@ jobs:
       - name: prenodes
         env:
           SERVER_HOME: releases
-        run: ./prenodes.sh
+        run: |
+          if [ -f "./prenodes.sh" ]; then
+            chmod +x ./prenodes.sh
+            ./prenodes.sh
+          else
+            echo "prenodes.sh not found, skipping"
+          fi
         
       - name: Setup Pages
         id: pages
@@ -467,14 +500,15 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-22.04
     needs: build_pages
+    if: inputs.without_pages == false && !cancelled()
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        
 
   clear_artifact:
     needs: push_packages
+    if: always()
     name: Clearing Artifact
     permissions:
       actions: write
