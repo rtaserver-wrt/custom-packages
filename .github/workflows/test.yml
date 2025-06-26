@@ -96,6 +96,9 @@ jobs:
           sudo pip3 install --upgrade pip
           sudo pip3 install meson ninja
 
+          sudo rm -rf /var/cache/apt/archives/lock
+          sudo rm -rf /var/cache/apt/archives/partial/*
+
 
       - name: Prepare SDK Cache Directory
         run: |
