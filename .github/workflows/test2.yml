@@ -357,13 +357,13 @@ jobs:
           mkdir -p ${{ github.workspace }}/artifacts/logs
           
           # Copy built packages
-          if [ -d "./bin/packages/${{ matrix.arch }}" ]; then
-            cp -r ./bin/packages/${{ matrix.arch }}/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/
+          if [ -d "./bin/packages/${{ matrix.arch }}/custom" ]; then
+            cp -r ./bin/packages/${{ matrix.arch }}/custom/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/
           fi
           
           # Copy logs if they exist
-          if [ -d "./logs" ]; then
-            cp -r ./logs/* ${{ github.workspace }}/artifacts/logs/ 2>/dev/null || true
+          if [ -d "./logs/package/feeds/custom" ]; then
+            cp -r ./logs/package/feeds/custom/* ${{ github.workspace }}/artifacts/logs/ 2>/dev/null || true
           fi
           
           # List built packages
@@ -406,7 +406,12 @@ jobs:
       
       - name: Download temporary artifact
         uses: actions/download-artifact@v4
-        
+
+      - name: Delete Logs
+        run: |
+          # Remove logs directory if it exists
+          rm -rf build_logs_${{ matrix.release }}_${{ matrix.arch }} 2>/dev/null || true
+
       - name: Moving artifact to releases
         shell: bash
         run: |
