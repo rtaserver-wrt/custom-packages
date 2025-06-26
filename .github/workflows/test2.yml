@@ -300,7 +300,11 @@ jobs:
           
           # Set environment variables for build
           export BUILD_LOG=1
-          export CONFIG_AUTOREMOVE=y
+          export CONFIG_ALL_NONSHARED=n
+          export CONFIG_ALL_KMODS=n
+          export CONFIG_ALL=n
+          export CONFIG_AUTOREMOVE=n
+          export CONFIG_SIGNED_PACKAGES=n
           export FEEDNAME="custom"
           
           RET=0
