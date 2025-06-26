@@ -1,0 +1,67 @@
+Package: atinout
+Version: 0.9.1
+Depends: libc
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/atinout
+SourceName: atinout
+License: GPLv2
+LicenseFiles: LICENSE
+Section: net
+SourceDateEpoch: 1750944027
+URL: http://atinout.sourceforge.net/
+Maintainer: Adrian Guenter <a@gntr.me>
+Architecture: x86_64
+Installed-Size: 20480
+Filename: atinout_0.9.1_x86_64.ipk
+Size: 3917
+SHA256sum: 1d78133c7b26b7a92fc0264c65be824d4e528bb631805fde8223cc99ea216e9c
+Description:  Atinout is a program that will execute AT commands in sequence and
+ capture the response from the modem.
+
+Package: internet-detector
+Version: 1.5.1-r15
+Depends: libc, lua, luaposix, libuci-lua
+Source: /home/runner/work/custom-packages/custom-packages/feeds/packages/internet-detector
+SourceName: internet-detector
+Section: net
+SourceDateEpoch: 1750924357
+URL: https://github.com/gSpotx2f/luci-app-internet-detector
+Maintainer: gSpot <https://github.com/gSpotx2f/luci-app-internet-detector>
+Architecture: all
+Installed-Size: 71680
+Filename: internet-detector_1.5.1-r15_all.ipk
+Size: 13066
+SHA256sum: f2df89a65bba1b10567eed998895d0a997c4fbb782a79ff0564b16707943e1a1
+Description:  Internet-detector is a small daemon
+ for checking Internet availability.
+ Written in Lua using the luaposix library.
+
+Package: luci-app-internet-detector
+Version: 1.5.1-r14
+Depends: libc, internet-detector
+Source: /home/runner/work/custom-packages/custom-packages/feeds/luci/luci-app-internet-detector
+SourceName: luci-app-internet-detector
+Section: luci
+SourceDateEpoch: 1750924357
+URL: https://github.com/openwrt/luci
+Maintainer: OpenWrt LuCI community
+Architecture: all
+Installed-Size: 51200
+Filename: luci-app-internet-detector_1.5.1-r14_all.ipk
+Size: 10344
+SHA256sum: da9bb3fbe3210d4e2bb08549c417211a7219bc31a88332a4b8ce3f9e6e26b2d5
+Description:  LuCI support for internet-detector
+
+Package: luci-i18n-internet-detector-ru
+Version: 25.177.28357~26c637e
+Depends: libc, luci-app-internet-detector
+Source: /home/runner/work/custom-packages/custom-packages/feeds/luci/luci-app-internet-detector
+SourceName: luci-app-internet-detector
+Section: luci
+SourceDateEpoch: 1750924357
+Architecture: all
+Installed-Size: 30720
+Filename: luci-i18n-internet-detector-ru_25.177.28357~26c637e_all.ipk
+Size: 5854
+SHA256sum: 604f03036ccb26fa4f08a3672fa225092ba77499435dc7d24261dc0cac0527ba
+Description:  Translation for luci-app-internet-detector - Русский (Russian)
+
