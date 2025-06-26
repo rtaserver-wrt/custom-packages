@@ -46,7 +46,7 @@ on:
           - '23.05.5'
         
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
   actions: write
@@ -84,14 +84,14 @@ jobs:
           _packages=""
           _luci=""
           
-          # Check for packages directory
+          # Check for packages directory and find subdirectories (actual packages)
           if [ -d "$GITHUB_WORKSPACE/feeds/packages" ]; then
-            _packages="$(find $GITHUB_WORKSPACE/feeds/packages -maxdepth 1 -type d -name "*" | grep -v "^$GITHUB_WORKSPACE/feeds/packages$" | xargs -I {} basename {} | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+            _packages="$(find $GITHUB_WORKSPACE/feeds/packages -mindepth 1 -maxdepth 1 -type d -not -name ".*" | xargs -I {} basename {} | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
           fi
           
-          # Check for luci directory
+          # Check for luci directory and find subdirectories (actual packages)
           if [ -d "$GITHUB_WORKSPACE/feeds/luci" ]; then
-            _luci="$(find $GITHUB_WORKSPACE/feeds/luci -maxdepth 1 -type d -name "*" | grep -v "^$GITHUB_WORKSPACE/feeds/luci$" | xargs -I {} basename {} | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+            _luci="$(find $GITHUB_WORKSPACE/feeds/luci -mindepth 1 -maxdepth 1 -type d -not -name ".*" | xargs -I {} basename {} | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
           fi
           
           # Log findings
@@ -107,9 +107,9 @@ jobs:
             echo "🎨 Found LuCI packages: $_luci"
           fi
           
-          # Combine packages
+          # Combine packages and remove duplicates
           combined_packages="$_packages $_luci"
-          combined_packages=$(echo "$combined_packages" | xargs)
+          combined_packages=$(echo "$combined_packages" | xargs -n1 | sort -u | xargs)
           
           echo "📋 Combined packages: $combined_packages"
           echo "::endgroup::"
@@ -248,7 +248,8 @@ jobs:
             zstd \
             wget \
             xsltproc \
-            zlib1g-dev
+            zlib1g-dev \
+            jq
           echo "::endgroup::"
 
       - name: 🗂️ Create Build Environment
@@ -344,11 +345,10 @@ jobs:
             tar -xf sdk.tar.xz --strip-components=1
           fi
 
-          rm sdk.tar.*
+          rm sdk.${SDK_EXT}
 
           echo "✅ SDK ready"
           echo "::endgroup::"
-
 
       - name: 🔧 Setup SDK Environment
         working-directory: ${{ github.workspace }}/openwrt
@@ -359,10 +359,25 @@ jobs:
           export CCACHE_DIR="${{ runner.temp }}/ccache"
           mkdir -p "$CCACHE_DIR"
           
-          # Copy custom feeds
-          if [ -d "${{ github.workspace }}/feeds" ]; then
-            echo "📦 Copying custom feeds..."
-            cp -r ${{ github.workspace }}/feeds/* ./feeds/ 2>/dev/null || true
+          # Copy custom feeds only if they contain actual packages
+          if [ -d "${{ github.workspace }}/feeds/packages" ]; then
+            package_count=$(find ${{ github.workspace }}/feeds/packages -mindepth 1 -maxdepth 1 -type d -not -name ".*" | wc -l)
+            if [ $package_count -gt 0 ]; then
+              echo "📦 Copying custom packages feed..."
+              rm -rf feeds/packages/custom 2>/dev/null || true
+              mkdir -p feeds/packages/custom
+              cp -r ${{ github.workspace }}/feeds/packages/* feeds/packages/custom/ 2>/dev/null || true
+            fi
+          fi
+          
+          if [ -d "${{ github.workspace }}/feeds/luci" ]; then
+            luci_count=$(find ${{ github.workspace }}/feeds/luci -mindepth 1 -maxdepth 1 -type d -not -name ".*" | wc -l)
+            if [ $luci_count -gt 0 ]; then
+              echo "🎨 Copying custom luci feed..."
+              rm -rf feeds/luci/custom 2>/dev/null || true
+              mkdir -p feeds/luci/custom
+              cp -r ${{ github.workspace }}/feeds/luci/* feeds/luci/custom/ 2>/dev/null || true
+            fi
           fi
           
           # Update feeds
@@ -373,7 +388,19 @@ jobs:
           if [ -n "${{ needs.prepare.outputs.packages }}" ]; then
             echo "📦 Installing packages: ${{ needs.prepare.outputs.packages }}"
             for pkg in ${{ needs.prepare.outputs.packages }}; do
-              ./scripts/feeds install "$pkg" || echo "⚠️ Failed to install $pkg"
+              echo "Installing package: $pkg"
+              ./scripts/feeds install "$pkg" || echo "⚠️ Failed to install $pkg, will try to find in custom feeds"
+              
+              # Try to install from custom feeds if available
+              if [ -d "feeds/packages/custom/$pkg" ]; then
+                echo "Found $pkg in custom packages feed"
+                ./scripts/feeds install -p packages "$pkg" || true
+              fi
+              
+              if [ -d "feeds/luci/custom/$pkg" ]; then
+                echo "Found $pkg in custom luci feed"
+                ./scripts/feeds install -p luci "$pkg" || true
+              fi
             done
           fi
           
@@ -418,14 +445,32 @@ jobs:
           
           # Build packages
           if [ -n "${{ needs.prepare.outputs.packages }}" ]; then
+            build_success=0
+            total_packages=0
+            
             for pkg in ${{ needs.prepare.outputs.packages }}; do
               echo "🔨 Building package: $pkg"
-              make package/${pkg}/compile V=${{ inputs.verbose || '0' }} -j$(nproc) || {
+              total_packages=$((total_packages + 1))
+              
+              if make package/${pkg}/compile V=${{ inputs.verbose || '0' }} -j$(nproc); then
+                echo "✅ Successfully built $pkg"
+                build_success=$((build_success + 1))
+              else
                 echo "❌ Failed to build $pkg"
-                [ "${{ inputs.verbose || '0' }}" != "0" ] && make package/${pkg}/compile V=s
-                continue
-              }
+                if [ "${{ inputs.verbose || '0' }}" != "0" ]; then
+                  echo "Retrying with verbose output..."
+                  make package/${pkg}/compile V=s || true
+                fi
+              fi
             done
+            
+            echo "📊 Build summary: $build_success/$total_packages packages built successfully"
+            
+            # Fail if no packages were built
+            if [ $build_success -eq 0 ]; then
+              echo "❌ No packages were built successfully"
+              exit 1
+            fi
           else
             echo "🔨 Building all available packages..."
             make package/compile V=${{ inputs.verbose || '0' }} -j$(nproc) || {
@@ -447,12 +492,16 @@ jobs:
           mkdir -p "$ARTIFACTS_DIR"
           
           # Find and copy packages
+          packages_found=0
+          
           if [ -d "bin/packages/${{ matrix.arch }}" ]; then
             # Copy packages, excluding routing and telephony
             find bin/packages/${{ matrix.arch }} -name "*.ipk" -o -name "*.apk" | \
             grep -v -E "(routing|telephony)" | \
             while read pkg; do
-              cp "$pkg" "$ARTIFACTS_DIR/" 2>/dev/null || true
+              if [ -f "$pkg" ]; then
+                cp "$pkg" "$ARTIFACTS_DIR/" 2>/dev/null && packages_found=$((packages_found + 1)) || true
+              fi
             done
           fi
           
@@ -461,8 +510,16 @@ jobs:
             find bin/targets -name "*.ipk" -o -name "*.apk" | \
             grep -v -E "(routing|telephony)" | \
             while read pkg; do
-              cp "$pkg" "$ARTIFACTS_DIR/" 2>/dev/null || true
+              if [ -f "$pkg" ]; then
+                cp "$pkg" "$ARTIFACTS_DIR/" 2>/dev/null || true
+              fi
             done
+          fi
+          
+          # Count final packages
+          if [ -d "$ARTIFACTS_DIR" ]; then
+            final_count=$(find "$ARTIFACTS_DIR" -name "*.ipk" -o -name "*.apk" | wc -l)
+            echo "📊 Collected $final_count packages"
           fi
           
           echo "✅ Package collection complete"
