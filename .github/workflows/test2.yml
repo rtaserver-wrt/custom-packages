@@ -1,0 +1,470 @@
+#
+# Copyright (C) 2024 nosignals
+#
+name: AutoCompiler OpenWrt Packages
+
+on:
+  workflow_run:
+    workflows: ["Auto Sync App"]
+    types:
+      - completed
+
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/**'
+      - 'README.md'
+    
+  workflow_dispatch:
+    inputs:
+      compile_pkg:
+        description: 'Compile packages (default : all packages on list_packages.txt)'
+        required: false
+        default: ''
+        type: string
+        
+      verbose:
+        description: 'Verbose (default : 0)'
+        required: false
+        default: '0'
+        type: string
+        
+      without_pages:
+        description: 'Dont deploy pages'
+        required: true
+        default: false
+        type: boolean
+        
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  
+jobs: 
+  build_ipk:
+    permissions:
+      contents: write
+    name: AutoCompiler
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        release:
+          - SNAPSHOT
+          - 24.10.5
+          - 23.05.5
+        arch:
+          - x86_64
+          - mips_24kc
+          - mipsel_24kc
+          - arm_cortex-a7_neon-vfpv4
+          - aarch64_cortex-a53
+          - aarch64_cortex-a72
+          - aarch64_generic
+          
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: 📋 Read Package List
+        if: inputs.compile_pkg == ''
+        id: list_package
+        run: |
+          echo "::group::📋 Reading package list"
+          
+          # Initialize package lists
+          _packages=""
+          _luci=""
+          
+          # Check for packages directory and find subdirectories (actual packages)
+          if [ -d "$GITHUB_WORKSPACE/feeds/packages" ]; then
+            _packages="$(find $GITHUB_WORKSPACE/feeds/packages -mindepth 1 -maxdepth 1 -type d -not -name ".*" | xargs -I {} basename {} | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          fi
+          
+          # Check for luci directory and find subdirectories (actual packages)
+          if [ -d "$GITHUB_WORKSPACE/feeds/luci" ]; then
+            _luci="$(find $GITHUB_WORKSPACE/feeds/luci -mindepth 1 -maxdepth 1 -type d -not -name ".*" | xargs -I {} basename {} | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          fi
+          
+          # Log findings
+          if [ -z "$_packages" ]; then
+            echo "⚠️ No packages found in feeds/packages"
+          else
+            echo "📦 Found packages: $_packages"
+          fi
+          
+          if [ -z "$_luci" ]; then
+            echo "⚠️ No LuCI packages found in feeds/luci"
+          else
+            echo "🎨 Found LuCI packages: $_luci"
+          fi
+          
+          # Combine packages and remove duplicates
+          combined_packages="$_packages $_luci"
+          combined_packages=$(echo "$combined_packages" | xargs -n1 | sort -u | xargs)
+          
+          echo "📋 Combined packages: $combined_packages"
+          echo "::endgroup::"
+          echo "content=$combined_packages" >> $GITHUB_OUTPUT
+
+      - name: List Compiled Packages
+        run: echo "Compiled Packages | ${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
+        
+      - name: Creating Directory
+        run: mkdir -p artifacts
+         
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev \
+            zlib1g-dev gawk git gettext libssl-dev xsltproc rsync wget unzip python3 \
+            python3-distutils subversion zstd
+        
+      - name: Download and Setup OpenWrt SDK
+        run: |
+          # Determine SDK URL based on architecture and release
+          RELEASE="${{ matrix.release }}"
+          ARCH="${{ matrix.arch }}"
+          
+          # Map release versions to URL paths and GCC versions
+          if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+            URL_PATH="snapshots/targets"
+            GCC_VERSION="14.3.0"
+            FILE_EXT="tar.zst"
+          elif [[ "$RELEASE" == "24.10.5" ]]; then
+            URL_PATH="releases/24.10.5/targets"
+            GCC_VERSION="13.3.0"
+            FILE_EXT="tar.zst"
+          elif [[ "$RELEASE" == "23.05.5" ]]; then
+            URL_PATH="releases/23.05.5/targets"
+            GCC_VERSION="12.3.0"
+            FILE_EXT="tar.xz"
+          fi
+          
+          # Map architectures to target/subtarget
+          case "$ARCH" in
+            "x86_64")
+              TARGET="x86/64"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-x86-64_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-x86-64_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "mips_24kc")
+              TARGET="ath79/generic"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-ath79-generic_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-ath79-generic_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "mipsel_24kc")
+              TARGET="ramips/mt7621"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-ramips-mt7621_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-ramips-mt7621_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "arm_cortex-a7_neon-vfpv4")
+              TARGET="bcm27xx/bcm2709"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-bcm27xx-bcm2709_gcc-${GCC_VERSION}_musl_eabi.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-bcm27xx-bcm2709_gcc-${GCC_VERSION}_musl_eabi.Linux-x86_64"
+              fi
+              ;;
+            "aarch64_cortex-a53")
+              TARGET="bcm27xx/bcm2710"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-bcm27xx-bcm2710_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-bcm27xx-bcm2710_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "aarch64_cortex-a72")
+              TARGET="bcm27xx/bcm2711"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-bcm27xx-bcm2711_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-bcm27xx-bcm2711_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+            "aarch64_generic")
+              TARGET="rockchip/armv8"
+              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
+                SDK_NAME="openwrt-sdk-rockchip-armv8_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              else
+                SDK_NAME="openwrt-sdk-${RELEASE}-rockchip-armv8_gcc-${GCC_VERSION}_musl.Linux-x86_64"
+              fi
+              ;;
+          esac
+          
+          SDK_URL="https://downloads.openwrt.org/${URL_PATH}/${TARGET}/${SDK_NAME}.${FILE_EXT}"
+          
+          echo "Downloading SDK from: $SDK_URL"
+          wget -q "$SDK_URL" -O "sdk.${FILE_EXT}"
+          
+          echo "Extracting SDK..."
+          if [[ "$FILE_EXT" == "tar.zst" ]]; then
+            zstd -d "sdk.${FILE_EXT}" -o sdk.tar
+            tar -xf sdk.tar
+          else
+            tar -xf "sdk.${FILE_EXT}"
+          fi
+          
+          mv ${SDK_NAME} openwrt-sdk
+          
+          echo "SDK_PATH=$(pwd)/openwrt-sdk" >> $GITHUB_ENV
+          echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+
+      - name: Setup SDK Feeds
+        run: |
+          cd $SDK_PATH
+          
+          # Copy custom feeds from repository
+          if [ -d "${{ github.workspace }}/feeds/packages" ]; then
+            echo "Copying custom packages feed..."
+            rm -rf ./feeds/packages
+            cp -r ${{ github.workspace }}/feeds/packages ./feeds/
+          fi
+          
+          if [ -d "${{ github.workspace }}/feeds/luci" ]; then
+            echo "Copying custom luci feed..."
+            rm -rf ./feeds/luci
+            cp -r ${{ github.workspace }}/feeds/luci ./feeds/
+          fi
+          
+          # Update and install feeds
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Copy Package Sources
+        run: |
+          cd $SDK_PATH
+          
+          # Copy package sources to SDK if they exist in the root package directory
+          if [ -d "${{ github.workspace }}/package" ]; then
+            echo "Copying root package directory..."
+            cp -r ${{ github.workspace }}/package/* ./package/ 2>/dev/null || true
+          fi
+          
+          # Copy additional packages from feeds/packages
+          if [ -d "${{ github.workspace }}/feeds/packages" ]; then
+            echo "Copying packages from feeds/packages..."
+            # Find all package directories in feeds/packages and copy them
+            find ${{ github.workspace }}/feeds/packages -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
+              if [ -f "$pkg_dir/Makefile" ]; then
+                pkg_name=$(basename "$pkg_dir")
+                category=$(basename "$(dirname "$pkg_dir")")
+                
+                # Create category directory if it doesn't exist
+                mkdir -p "./feeds/packages/$category"
+                cp -r "$pkg_dir" "./feeds/packages/$category/"
+                
+                echo "Copied package: $category/$pkg_name"
+              fi
+            done
+          fi
+          
+          # Copy additional packages from feeds/luci
+          if [ -d "${{ github.workspace }}/feeds/luci" ]; then
+            echo "Copying packages from feeds/luci..."
+            # Find all package directories in feeds/luci and copy them
+            find ${{ github.workspace }}/feeds/luci -mindepth 1 -maxdepth 2 -type d -name "*" | while read pkg_dir; do
+              if [ -f "$pkg_dir/Makefile" ]; then
+                pkg_name=$(basename "$pkg_dir")
+                category=$(basename "$(dirname "$pkg_dir")")
+                
+                # Create category directory if it doesn't exist
+                mkdir -p "./feeds/luci/$category"
+                cp -r "$pkg_dir" "./feeds/luci/$category/"
+                
+                echo "Copied package: $category/$pkg_name"
+              fi
+            done
+          fi
+          
+          # List available packages
+          echo "Available packages:"
+          find ./feeds/packages -name "Makefile" -path "*/Makefile" | sed 's|./feeds/packages/||' | sed 's|/Makefile||' | sort || true
+          find ./feeds/luci -name "Makefile" -path "*/Makefile" | sed 's|./feeds/luci/||' | sed 's|/Makefile||' | sort || true
+
+      - name: Build Packages
+        run: |
+          cd $SDK_PATH
+          
+          # Set verbose mode
+          if [ "${{ inputs.verbose }}" = "1" ]; then
+            export V=s
+          fi
+          
+          # Get packages to compile
+          PACKAGES="${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
+          PACKAGES=$(echo $PACKAGES | tr -d '\n\r' | xargs)
+          
+          echo "Building packages: $PACKAGES"
+          
+          # Build each package
+          if [ -n "$PACKAGES" ]; then
+            for pkg in $PACKAGES; do
+              echo "Building package: $pkg"
+              make package/$pkg/compile V=$V || {
+                echo "Failed to build package: $pkg"
+                continue
+              }
+            done
+          else
+            echo "No packages specified, building all available packages"
+            make package/compile V=$V
+          fi
+          
+          # Create package index
+          make package/index V=$V
+
+      - name: Copy Built Packages
+        run: |
+          cd $SDK_PATH
+          
+          # Create artifacts directory structure
+          mkdir -p ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}
+          
+          # Copy built packages
+          if [ -d "./bin/packages/${{ matrix.arch }}" ]; then
+            cp -r ./bin/packages/${{ matrix.arch }}/* ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/
+          fi
+          
+          # List built packages
+          echo "Built packages:"
+          find ${{ github.workspace }}/artifacts -name "*.ipk" -type f
+        
+      - name: Delivering Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt_${{ matrix.release }}_${{ matrix.arch }}
+          path: ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/*
+
+  push_packages:
+    needs: build_ipk
+    name: Push Packages 
+    permissions:
+      contents: write  # To push a branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: 'gh-pages'
+          lfs: false
+          submodules: false
+      
+      - name: Download temporary artifact
+        uses: actions/download-artifact@v4
+        
+      - name: Moving artifact to releases
+        shell: bash
+        run: |
+          # rm -rf releases/*
+          mkdir -p releases 2>/dev/null
+          version=( SNAPSHOT 24.10.5 23.05.5 )
+          archi=( x86_64 mips_24kc mipsel_24kc arm_cortex-a7_neon-vfpv4 aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic )
+          for vr in ${version[*]} 
+            do
+              if [[ "$vr" == "SNAPSHOT" ]]; then
+                vers="snapshot"
+              else
+                vers=$(echo $vr | sed 's/..$//')
+              fi
+              for arc in ${archi[*]} 
+                do
+                  rm -rf releases/$vers/packages/$arc
+                  mkdir -p releases/$vers/packages/$arc
+                  cp -rf openwrt_$vr\_$arc/* releases/$vers/packages/$arc
+                  rm -rf releases/$vers/packages/$arc/routing releases/$vers/packages/$arc/telephony
+                done
+            done
+          
+          rm -rf openwrt_* 2>/dev/null
+          
+      - name: Display structure files
+        working-directory: releases
+        run: ls -R
+        
+      - name: Commit and push Packages
+        env:
+          Branch: gh-pages
+        run: |
+          git config --local user.name "GitHub Action"
+          git config --local user.email "actions-user@users.noreply.github.com"
+          git add .
+          git commit -m "Update Packages"
+          git push
+          
+  build_pages:
+    needs: push_packages
+    if: inputs.without_pages == 0 && !cancelled()
+    name: Building pages
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: 'gh-pages'
+          lfs: true
+          submodules: true
+          
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          cache-version: 0 
+          
+      - name: prenodes
+        env:
+          SERVER_HOME: releases
+        run: ./prenodes.sh
+        
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        
+      - name: Build with Jekyll
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: production
+          
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build_pages
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        
+
+  clear_artifact:
+    needs: push_packages
+    name: Clearing Artifact
+    permissions:
+      actions: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 5
+          keep_minimum_runs: 2
