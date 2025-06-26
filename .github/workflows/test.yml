@@ -17,12 +17,27 @@ on:
 
   workflow_dispatch:
     inputs:
+      release:
+        description: 'Build for a specific release. Leave empty to build for all.'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - 'SNAPSHOT'
+          - '24.10.2'
+          - '23.05.5'
+
+      arch:
+        description: 'Build for a specific arch (e.g., x86_64, aarch64_cortex-a53). Leave empty to build for all.'
+        required: false
+        default: ''
+        type: string
       compile_pkg:
         description: 'Compile specific packages (space-separated). Default: all in feeds.'
         required: false
         default: ''
         type: string
-
       verbose:
         description: 'Verbose build output'
         required: false
@@ -32,7 +47,6 @@ on:
           - '0' # No verbose
           - '1' # V=s
           - '2' # V=sc
-
       without_pages:
         description: 'Do not build and deploy GitHub Pages'
         required: true
@@ -57,18 +71,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release:
-          - SNAPSHOT
-          - 24.10.2
-          - 23.05.5
-        arch:
-          - x86_64
-          - mips_24kc
-          - mipsel_24kc
-          - arm_cortex-a7_neon-vfpv4
-          - aarch64_cortex-a53
-          - aarch64_cortex-a72
-          - aarch64_generic
+        release: ${{ fromJSON(inputs.release && format('["{0}"]', inputs.release) || '["SNAPSHOT", "24.10.2", "23.05.5"]') }}
+        arch: ${{ fromJSON(inputs.arch && format('["{0}"]', inputs.arch) || '["x86_64", "mips_24kc", "mipsel_24kc", "arm_cortex-a7_neon-vfpv4", "aarch64_cortex-a53", "aarch64_cortex-a72", "aarch64_generic"]') }}
 
     env:
       SDK_CACHE_DIR: ${{ github.workspace }}/sdk_cache
@@ -160,7 +164,7 @@ jobs:
           echo "✅ SDK extracted to $SDK_CACHE_DIR/openwrt-sdk"
           echo "::endgroup::"
         
-      - name:  경로 설정
+      - name: 📂 Set SDK Path
         run: echo "SDK_PATH=${{ env.SDK_CACHE_DIR }}/openwrt-sdk" >> $GITHUB_ENV
 
       - name: 📋 Read Package List from Feeds
@@ -254,7 +258,7 @@ jobs:
             exit 1
           fi
 
-      - name:  artifacts
+      - name: 🗂️ Collect Artifacts
         if: always()
         run: |
           echo "::group::🗂️ Preparing Artifacts"
@@ -265,7 +269,7 @@ jobs:
           
           echo "Copying built packages..."
           find bin/packages/${{ matrix.arch }}/custom/ -type f -name "*.ipk" -o -name "*.apk" -exec cp {} $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ \; 2>/dev/null || echo "No packages found to copy."
-
+          
           echo "Copying build logs..."
           find logs/ -type f -name "*.log" -exec cp {} $GITHUB_WORKSPACE/artifacts/logs/ \; 2>/dev/null || true
           
@@ -290,7 +294,7 @@ jobs:
 
   push_packages:
     needs: build_ipk
-    if: success()
+    if: success() || failure()
     name: 🚀 Push Packages to gh-pages
     permissions:
       contents: write
