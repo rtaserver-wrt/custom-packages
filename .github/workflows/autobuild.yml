@@ -183,7 +183,7 @@ jobs:
           find_packages() {
             local feed_dir="$1"
             if [ -d "$feed_dir" ]; then
-              find "$feed_dir" -mindepth 1 -maxdepth 2 -type f -name "Makefile" -exec dirname {} \; | xargs -n1 basename | tr '\n' ' '
+              find -L "$feed_dir" -mindepth 1 -maxdepth 2 -type f -name "Makefile" -exec dirname {} \; | xargs -n1 basename | tr '\n' ' '
             fi
           }
           
