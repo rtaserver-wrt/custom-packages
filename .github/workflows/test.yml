@@ -324,7 +324,7 @@ jobs:
           echo "🔍 Searching SDK in: $FULL_URL"
 
           # Ambil nama SDK dari halaman (berdasarkan ekstensi)
-          SDK_FILE=$(curl -s "$FULL_URL/" | grep -oE "openwrt-sdk.*${{ matrix.arch }}.*\.${SDK_EXT}" | head -1)
+          SDK_FILE=$(curl -s "$FULL_URL/" | grep -oE "openwrt-sdk[^\"']*\.${SDK_EXT}" | head -1)
 
           if [ -z "$SDK_FILE" ]; then
             echo "❌ SDK file not found for release ${{ matrix.release }} and arch ${{ matrix.arch }}"
