@@ -100,8 +100,16 @@ jobs:
           chmod 777 $SDK_CACHE_DIR
           echo "SDK Cache Directory: $SDK_CACHE_DIR"
           echo "::endgroup::"
+      
+      - name: 📦 Cache OpenWrt SDK
+        id: cache-sdk
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
+          key: sdk-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}
 
       - name: 📥 Download and Setup OpenWrt SDK
+        if: steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
           RELEASE="${{ matrix.release }}"
           ARCH="${{ matrix.arch }}"
@@ -157,7 +165,7 @@ jobs:
           echo "::group:: 📦 Extracting SDK"
           mkdir -p "$SDK_CACHE_DIR/openwrt-sdk"
           if [[ "$FILE_EXT" == "tar.zst" ]]; then
-            tar --use-compress-program=zstd -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" -C "$SDK_CACHE_DIR" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"
+            tar --use-compress-program=zstd -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"
           else
             tar -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"
           fi
@@ -195,6 +203,13 @@ jobs:
           echo "::group::📦 Packages to be compiled"
           echo "${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
           echo "::endgroup::"
+
+      - name: 📦 Cache OpenWrt dl Directory
+        id: cache-dl
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk/dl
+          key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}
 
       - name: 🛠️ Setup SDK Feeds and Configuration
         run: |
