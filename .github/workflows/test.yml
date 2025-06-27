@@ -157,7 +157,7 @@ jobs:
           
           echo "📦 Found packages: ${packages:-None}"
 
-          if [ ${{ inputs.compile_pkg }} != '' ]; then
+          if [ "${{ inputs.compile_pkg }}" = '' ]; then
             combined_packages=$(echo "$packages" | xargs -n1 | sort -u | xargs)
           else
             combined_packages="${{ inputs.compile_pkg }}"
@@ -247,7 +247,7 @@ jobs:
 
   build_and_deploy_pages:
     needs: push_packages
-    if: inputs.without_pages == false && (success() || failure())
+    if: inputs.without_pages == 'false' && (success() || failure())
     name: 🌐 Deploy to GitHub Pages
     permissions:
       pages: write
