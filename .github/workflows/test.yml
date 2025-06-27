@@ -240,14 +240,20 @@ jobs:
           echo "::endgroup::"
           
           echo "::group::🔄 Updating and Installing Feeds"
-          ./scripts/feeds update -a || {
-            echo "❌ Failed to update feeds"
-            exit 1
-          }
-          ./scripts/feeds install -a || {
+          if ! ./scripts/feeds update -a; then
+            echo "❌ Failed to update feeds. Checking for error logs in custom feeds..."
+            # Cari semua dump.txt error di logs/feeds/custom/packages
+            find logs/feeds/custom/packages -name dump.txt 2>/dev/null | while read dump; do
+              echo "--- Error log: $dump ---"
+              cat "$dump"
+              echo "--------------------------"
+            done
+            # Jangan langsung exit, lanjutkan install feeds
+          fi
+          if ! ./scripts/feeds install -a; then
             echo "❌ Failed to install feeds"
             exit 1
-          }
+          fi
           
           # Install golang dependency if needed
           if [ -d "feeds/packages/lang/golang" ]; then
