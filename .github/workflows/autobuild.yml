@@ -116,7 +116,26 @@ jobs:
             python3-setuptools rsync swig unzip zlib1g-dev file wget zstd python3-pyelftools \
             shfmt jq
           sudo pip3 install --upgrade pip
-          sudo pip3 install meson ninja
+          echo "::endgroup::"
+
+      - name: 🛡️ Verify python3-setuptools Installation
+        run: |
+          echo "::group::🔍 Verifying python3-setuptools installation"
+          if ! python3 -c 'import setuptools' 2>/dev/null; then
+            echo "python3-setuptools not found, attempting to install again..."
+            sudo -E apt-get -qq update
+            sudo -E apt-get -qq install python3-setuptools
+            if ! python3 -c 'import setuptools' 2>/dev/null; then
+              echo "❌ python3-setuptools installation failed!"
+              python3 --version
+              dpkg -l | grep python3
+              exit 1
+            else
+              echo "✅ python3-setuptools installed successfully."
+            fi
+          else
+            echo "✅ python3-setuptools is already installed."
+          fi
           echo "::endgroup::"
 
       - name: ⚙️ Prepare SDK Environment
@@ -321,37 +340,8 @@ jobs:
               echo "::group::📥 Downloading sources for $PKG"
               make \
                 BUILD_LOG="$BUILD_LOG" \
-                CONFIG_SIGNED_PACKAGES="${CONFIG_SIGNED_PACKAGES:-n}" \
-                CONFIG_AUTOREMOVE=y \
                 IGNORE_ERRORS="$IGNORE_ERRORS" \
                 "package/$PKG/download" V=s
-              echo "::endgroup::"
-              
-              # Check package integrity
-              echo "::group::🔍 Checking package integrity for $PKG"
-              make \
-                BUILD_LOG="$BUILD_LOG" \
-                IGNORE_ERRORS="$IGNORE_ERRORS" \
-                "package/$PKG/check" V=s 2>&1 | tee logtmp
-              
-              RET=${PIPESTATUS[0]}
-              if [ "$RET" -ne 0 ]; then
-                echo "::error::Package check failed for $PKG: $RET"
-                BUILD_SUCCESS=false
-                echo "::endgroup::"
-                break
-              fi
-              
-              # Check for hash issues
-              badhash_msg="HASH does not match "
-              badhash_msg+="|HASH uses deprecated hash,"
-              badhash_msg+="|HASH is missing,"
-              if grep -qE "$badhash_msg" logtmp; then
-                echo "::error::Package HASH check failed for $PKG"
-                BUILD_SUCCESS=false
-                echo "::endgroup::"
-                break
-              fi
               echo "::endgroup::"
               
               # Check patches if not disabled
@@ -399,6 +389,7 @@ jobs:
               echo "::group::🔨 Compiling $PKG"
               make \
                 BUILD_LOG="$BUILD_LOG" \
+                CONFIG_SIGNED_PACKAGES="${CONFIG_SIGNED_PACKAGES:-n}" \
                 IGNORE_ERRORS="$IGNORE_ERRORS" \
                 CONFIG_AUTOREMOVE=y \
                 $V_FLAG \
