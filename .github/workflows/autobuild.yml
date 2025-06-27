@@ -1,4 +1,3 @@
-
 # Copyright (C) 2025 rtaserver-wrt
 #
 name: AutoCompiler OpenWrt Packages
@@ -53,6 +52,26 @@ on:
         required: true
         default: false
         type: boolean
+      signed_packages:
+        description: 'Enable package signing'
+        required: false
+        default: false
+        type: boolean
+      ignore_errors:
+        description: 'Continue building even if some packages fail'
+        required: false
+        default: false
+        type: boolean
+      enable_index:
+        description: 'Create package index'
+        required: false
+        default: true
+        type: boolean
+      no_refresh_check:
+        description: 'Skip patch refresh check'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -77,6 +96,11 @@ jobs:
 
     env:
       SDK_CACHE_DIR: ${{ github.workspace }}/sdk_cache
+      FEEDNAME: custom
+      BUILD_LOG: 1
+      INDEX: ${{ inputs.enable_index && '1' || '0' }}
+      IGNORE_ERRORS: ${{ inputs.ignore_errors && '1' || '0' }}
+      NO_REFRESH_CHECK: ${{ inputs.no_refresh_check && '1' || '0' }}
 
     steps:
       - name: 🚀 Checkout Repository
@@ -84,18 +108,20 @@ jobs:
 
       - name: 🛠️ Install System Dependencies
         run: |
-          echo "::group:: Apt Cache & Dependencies Installation"
+          echo "::group::Apt Cache & Dependencies Installation"
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             build-essential clang flex bison g++ gawk \
             gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev \
-            python3-setuptools rsync swig unzip zlib1g-dev file wget zstd python3-pyelftools
+            python3-setuptools rsync swig unzip zlib1g-dev file wget zstd python3-pyelftools \
+            shfmt jq
           sudo pip3 install --upgrade pip
           sudo pip3 install meson ninja
           echo "::endgroup::"
+
       - name: ⚙️ Prepare SDK Environment
         run: |
-          echo "::group:: Setting up SDK Cache Directory"
+          echo "::group::Setting up SDK Cache Directory"
           mkdir -p $SDK_CACHE_DIR
           chmod 777 $SDK_CACHE_DIR
           echo "SDK Cache Directory: $SDK_CACHE_DIR"
@@ -114,7 +140,7 @@ jobs:
           RELEASE="${{ matrix.release }}"
           ARCH="${{ matrix.arch }}"
           
-          echo "::group:: ⚙️ SDK Configuration for Release: $RELEASE, Arch: $ARCH"
+          echo "::group::⚙️ SDK Configuration for Release: $RELEASE, Arch: $ARCH"
           
           if [[ "$RELEASE" == "SNAPSHOT" ]]; then
             URL_PATH="snapshots/targets"
@@ -132,6 +158,7 @@ jobs:
             FILE_EXT="tar.xz"
             echo "📦 Using stable release 23.05.5. Packages will be in IPK format."
           fi
+          
           case "$ARCH" in
             "x86_64") TARGET="x86/64" ;;
             "mips_24kc") TARGET="ath79/generic" ;;
@@ -141,6 +168,7 @@ jobs:
             "aarch64_cortex-a72") TARGET="bcm27xx/bcm2711" ;;
             "aarch64_generic") TARGET="rockchip/armv8" ;;
           esac
+          
           SDK_FLAVOR=$(echo $TARGET | tr '/' '-')
           SDK_SUFFIX_EABI=$(if [[ "$ARCH" == "arm_cortex-a7_neon-vfpv4" ]]; then echo "_eabi"; fi)
           
@@ -152,13 +180,13 @@ jobs:
           
           SDK_URL="https://downloads.openwrt.org/${URL_PATH}/${TARGET}/${SDK_NAME}.${FILE_EXT}"
           echo "::endgroup::"
-          echo "::group:: 📥 Downloading SDK"
+          echo "::group::📥 Downloading SDK"
           echo "Downloading from: $SDK_URL"
           wget -q "$SDK_URL" -O "$SDK_CACHE_DIR/sdk.${FILE_EXT}"
           echo "✅ SDK downloaded."
           echo "::endgroup::"
           
-          echo "::group:: 📦 Extracting SDK"
+          echo "::group::📦 Extracting SDK"
           mkdir -p "$SDK_CACHE_DIR/openwrt-sdk"
           if [[ "$FILE_EXT" == "tar.zst" ]]; then
             tar --use-compress-program=zstd -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"
@@ -170,6 +198,16 @@ jobs:
         
       - name: 📂 Set SDK Path
         run: echo "SDK_PATH=${{ env.SDK_CACHE_DIR }}/openwrt-sdk" >> $GITHUB_ENV
+
+      - name: 🔑 Setup Package Signing Key
+        if: inputs.signed_packages
+        run: |
+          if [ -n "${{ secrets.OPENWRT_SIGNING_KEY }}" ]; then
+            echo "${{ secrets.OPENWRT_SIGNING_KEY }}" > $SDK_PATH/key-build
+            echo "CONFIG_SIGNED_PACKAGES=y" >> $GITHUB_ENV
+          else
+            echo "::warning::No signing key provided, packages will not be signed"
+          fi
 
       - name: 📋 Read Package List from Feeds
         if: ${{ inputs.compile_pkg == '' }}
@@ -193,11 +231,15 @@ jobs:
           echo "✨ Combined unique packages: $combined_packages"
           echo "::endgroup::"
           echo "content=$combined_packages" >> $GITHUB_OUTPUT
+
       - name: 📜 List Packages to Compile
         run: |
           echo "::group::📦 Packages to be compiled"
-          echo "${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
+          PACKAGES_TO_BUILD="${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
+          echo "PACKAGES=$(echo $PACKAGES_TO_BUILD | xargs)" >> $GITHUB_ENV
+          echo "$PACKAGES_TO_BUILD"
           echo "::endgroup::"
+
       - name: 📦 Cache OpenWrt dl Directory
         id: cache-dl
         uses: actions/cache@v4
@@ -209,62 +251,202 @@ jobs:
         run: |
           cd $SDK_PATH
           echo "::group::📜 Configuring Feeds"
-          cp feeds.conf.default feeds.conf
-          echo "src-link custom $GITHUB_WORKSPACE/feeds" >> feeds.conf
+          
+          # Setup feeds.conf based on reference script
+          if [ -z "$NO_DEFAULT_FEEDS" ]; then
+            sed \
+              -e 's,https://git.openwrt.org/feed/,https://github.com/openwrt/,' \
+              -e 's,https://git.openwrt.org/openwrt/,https://github.com/openwrt/,' \
+              -e 's,https://git.openwrt.org/project/,https://github.com/openwrt/,' \
+              feeds.conf.default > feeds.conf
+          fi
+          
+          # Add custom feed
+          echo "src-link $FEEDNAME $GITHUB_WORKSPACE/feeds" >> feeds.conf
+          
           echo "Feeds configuration:"
           cat feeds.conf
           echo "::endgroup::"
           
           echo "::group::🔄 Updating and Installing Feeds"
           ./scripts/feeds update -a
-          ./scripts/feeds install -a
           echo "::endgroup::"
+          
           echo "::group::📝 Generating Build Configuration"
           if [ -d "$GITHUB_WORKSPACE/package" ]; then
             echo "Copying custom package sources..."
             cp -r $GITHUB_WORKSPACE/package/* ./package/ 2>/dev/null || true
           fi
-          echo "CONFIG_ALL_NONSHARED=n" > .config
-          echo "CONFIG_ALL_KMODS=n" >> .config
-          echo "CONFIG_ALL=n" >> .config
-          echo "CONFIG_AUTOREMOVE=n" >> .config
-          echo "CONFIG_SIGNED_PACKAGES=n" >> .config
+          
           make defconfig
           echo "✅ Default configuration generated."
           echo "::endgroup::"
+
       - name: 📦 Build Packages
         run: |
           cd $SDK_PATH
+          mkdir -p /tmp/artifacts
+          
+          # Set verbose flag
           V_FLAG=""
           if [ "${{ inputs.verbose }}" = "1" ]; then V_FLAG="V=s"; fi
           if [ "${{ inputs.verbose }}" = "2" ]; then V_FLAG="V=sc"; fi
-          PACKAGES_TO_BUILD="${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
-          PACKAGES_TO_BUILD=$(echo "$PACKAGES_TO_BUILD" | xargs)
           
           BUILD_SUCCESS=true
-          if [ -n "$PACKAGES_TO_BUILD" ]; then
-            for PKG in $PACKAGES_TO_BUILD; do
-              echo "::group::📦 Building Package: $PKG"
-              make package/$PKG/compile $V_FLAG -j$(nproc) || {
-                echo "❌ Failed to build package: $PKG"
+          
+          if [ -z "$PACKAGES" ]; then
+            echo "::group::📦 Building all packages in custom feeds"
+            # Install all packages from custom feed
+            ./scripts/feeds install -p "$FEEDNAME" -f -a
+            
+            # Build all packages
+            make \
+              BUILD_LOG="$BUILD_LOG" \
+              CONFIG_SIGNED_PACKAGES="${CONFIG_SIGNED_PACKAGES:-n}" \
+              IGNORE_ERRORS="$IGNORE_ERRORS" \
+              CONFIG_AUTOREMOVE=y \
+              $V_FLAG \
+              -j$(nproc) || BUILD_SUCCESS=false
+            echo "::endgroup::"
+          else
+            echo "::group::📦 Building specific packages with validation"
+            
+            # Get enabled packages for architecture check
+            make \
+              -f .config \
+              -f tmp/.packagedeps \
+              -f <(echo "\$(info \$(sort \$(package-y) \$(package-m)))"; echo -en "a:\n\t@:") \
+                | tr ' ' '\n' > enabled-package-subdirs.txt
+            
+            for PKG in $PACKAGES; do
+              echo "::group::📦 Processing Package: $PKG"
+              
+              # Check if package is supported on this architecture
+              if ! grep -m1 -qE "(^|/)$PKG$" enabled-package-subdirs.txt; then
+                echo "::warning file=$PKG::Skipping $PKG due to unsupported architecture"
+                echo "::endgroup::"
+                continue
+              fi
+              
+              # Install package
+              ./scripts/feeds install -p "$FEEDNAME" -f "$PKG"
+              
+              # Download sources
+              echo "::group::📥 Downloading sources for $PKG"
+              make \
+                BUILD_LOG="$BUILD_LOG" \
+                IGNORE_ERRORS="$IGNORE_ERRORS" \
+                "package/$PKG/download" V=s
+              echo "::endgroup::"
+              
+              # Check package integrity
+              echo "::group::🔍 Checking package integrity for $PKG"
+              make \
+                BUILD_LOG="$BUILD_LOG" \
+                IGNORE_ERRORS="$IGNORE_ERRORS" \
+                "package/$PKG/check" V=s 2>&1 | tee logtmp
+              
+              RET=${PIPESTATUS[0]}
+              if [ "$RET" -ne 0 ]; then
+                echo "::error::Package check failed for $PKG: $RET"
                 BUILD_SUCCESS=false
-              }
+                echo "::endgroup::"
+                break
+              fi
+              
+              # Check for hash issues
+              badhash_msg="HASH does not match "
+              badhash_msg+="|HASH uses deprecated hash,"
+              badhash_msg+="|HASH is missing,"
+              if grep -qE "$badhash_msg" logtmp; then
+                echo "::error::Package HASH check failed for $PKG"
+                BUILD_SUCCESS=false
+                echo "::endgroup::"
+                break
+              fi
+              echo "::endgroup::"
+              
+              # Check patches if not disabled
+              if [ "$NO_REFRESH_CHECK" != "1" ]; then
+                PATCHES_DIR=$(find $GITHUB_WORKSPACE/feeds -path "*/$PKG/patches" 2>/dev/null || true)
+                if [ -d "$PATCHES_DIR" ]; then
+                  echo "::group::🔧 Checking patches for $PKG"
+                  make \
+                    BUILD_LOG="$BUILD_LOG" \
+                    IGNORE_ERRORS="$IGNORE_ERRORS" \
+                    "package/$PKG/refresh" V=s
+                  
+                  if ! git -C "$PATCHES_DIR" diff --quiet -- .; then
+                    echo "::error::Dirty patches detected for $PKG, please refresh and review the diff"
+                    git -C "$PATCHES_DIR" checkout -- .
+                    BUILD_SUCCESS=false
+                    echo "::endgroup::"
+                    break
+                  fi
+                  
+                  make \
+                    BUILD_LOG="$BUILD_LOG" \
+                    IGNORE_ERRORS="$IGNORE_ERRORS" \
+                    "package/$PKG/clean" V=s
+                  echo "::endgroup::"
+                fi
+              fi
+              
+              # Check init scripts formatting
+              FILES_DIR=$(find $GITHUB_WORKSPACE/feeds -path "*/$PKG/files" 2>/dev/null || true)
+              if [ -d "$FILES_DIR" ]; then
+                echo "::group::📝 Checking init scripts format for $PKG"
+                find "$FILES_DIR" -name "*.init" -exec shfmt -w -sr -s '{}' \; 2>/dev/null || true
+                if ! git -C "$FILES_DIR" diff --quiet -- . 2>/dev/null; then
+                  echo "::error::Init script must be formatted for $PKG. Please run through shfmt -w -sr -s"
+                  git -C "$FILES_DIR" checkout -- . 2>/dev/null || true
+                  BUILD_SUCCESS=false
+                  echo "::endgroup::"
+                  break
+                fi
+                echo "::endgroup::"
+              fi
+              
+              # Compile package
+              echo "::group::🔨 Compiling $PKG"
+              make \
+                BUILD_LOG="$BUILD_LOG" \
+                IGNORE_ERRORS="$IGNORE_ERRORS" \
+                CONFIG_AUTOREMOVE=y \
+                $V_FLAG \
+                -j$(nproc) \
+                "package/$PKG/compile" || {
+                  echo "::error::Failed to build package: $PKG"
+                  BUILD_SUCCESS=false
+                  echo "::endgroup::"
+                  break
+                }
+              echo "::endgroup::"
               echo "::endgroup::"
             done
-          else
-            echo "::group::📦 Building all custom packages"
-            make package/compile $V_FLAG -j$(nproc) || BUILD_SUCCESS=false
+          fi
+          
+          # Create package index if enabled and build was successful
+          if [ "$BUILD_SUCCESS" = "true" ] && [ "$INDEX" = "1" ]; then
+            echo "::group::📇 Creating package index"
+            make package/index || echo "⚠️ Failed to create package index."
             echo "::endgroup::"
           fi
           
-          if [ "$BUILD_SUCCESS" = "true" ]; then
-            echo "::group::✒️ Creating package index"
-            make package/index $V_FLAG || echo "⚠️ Failed to create package index."
-            echo "::endgroup::"
-          else
+          # Move artifacts
+          if [ -d bin/ ]; then
+            mv bin/ /tmp/artifacts/
+          fi
+          
+          if [ -d logs/ ]; then
+            mv logs/ /tmp/artifacts/
+          fi
+          
+          if [ "$BUILD_SUCCESS" != "true" ]; then
             echo "::error::One or more packages failed to build."
             exit 1
           fi
+
       - name: 🗂️ Collect Artifacts
         if: always()
         run: |
@@ -272,18 +454,23 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}
           mkdir -p $GITHUB_WORKSPACE/artifacts/logs
           
-          cd $SDK_PATH
-          echo "✨ Bin Directory Structure:"
-          ls -R bin/packages
+          if [ -d /tmp/artifacts/bin ]; then
+            echo "✨ Bin Directory Structure:"
+            ls -R /tmp/artifacts/bin/packages 2>/dev/null || true
+            
+            echo "Copying built packages..."
+            cp -r /tmp/artifacts/bin/packages/${{ matrix.arch }}/${{ env.FEEDNAME }}/* $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || echo "No custom packages found to copy."
+          fi
           
-          echo "Copying built packages..."
-          cp -r bin/packages/${{ matrix.arch }}/custom/* $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || echo "No custom packages found to copy."
+          if [ -d /tmp/artifacts/logs ]; then
+            echo "Copying build logs..."
+            cp -r /tmp/artifacts/logs/* $GITHUB_WORKSPACE/artifacts/logs/ 2>/dev/null || true
+          fi
           
-          echo "Copying build logs..."
-          find logs/ -type f -name "*.log" -exec cp {} $GITHUB_WORKSPACE/artifacts/logs/ \; 2>/dev/null || true
           echo "✨ Artifacts structure:"
-          ls -R $GITHUB_WORKSPACE/artifacts
+          ls -R $GITHUB_WORKSPACE/artifacts 2>/dev/null || true
           echo "::endgroup::"
+
       - name: 📤 Upload Packages Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -335,16 +522,17 @@ jobs:
               
               echo "Moving packages from $dir to $TARGET_DIR"
               mkdir -p "$TARGET_DIR"
-              mv $dir/* "$TARGET_DIR/"
+              mv $dir/* "$TARGET_DIR/" 2>/dev/null || true
             fi
           done
           echo "::endgroup::"
           
           echo "::group::Final repository structure"
-          ls -R releases
+          ls -R releases 2>/dev/null || true
           echo "::endgroup::"
           
           rm -rf ./artifacts
+
       - name: 💾 Commit and Push Changes
         run: |
           git config --local user.name "GitHub Action"
@@ -356,9 +544,10 @@ jobs:
           else
             echo "✅ No new packages to commit."
           fi
+
   build_and_deploy_pages:
     needs: push_packages
-    if: inputs.without_pages == false && success() || failure()
+    if: inputs.without_pages == false && (success() || failure())
     name: 🌐 Deploy to GitHub Pages
     permissions:
       pages: write
@@ -391,6 +580,7 @@ jobs:
           else
             echo "prenodes.sh not found, skipping."
           fi
+
       - name: 🛠️ Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@v5

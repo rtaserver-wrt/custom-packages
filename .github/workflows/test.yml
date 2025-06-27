@@ -98,6 +98,26 @@ jobs:
           sudo -E apt-get -qq clean
           echo "::endgroup::"
 
+      - name: 🛡️ Verify python3-setuptools Installation
+        run: |
+          echo "::group::🔍 Verifying python3-setuptools installation"
+          if ! python3 -c 'import setuptools' 2>/dev/null; then
+            echo "python3-setuptools not found, attempting to install again..."
+            sudo -E apt-get -qq update
+            sudo -E apt-get -qq install python3-setuptools
+            if ! python3 -c 'import setuptools' 2>/dev/null; then
+              echo "❌ python3-setuptools installation failed!"
+              python3 --version
+              dpkg -l | grep python3
+              exit 1
+            else
+              echo "✅ python3-setuptools installed successfully."
+            fi
+          else
+            echo "✅ python3-setuptools is already installed."
+          fi
+          echo "::endgroup::"
+
       - name: ⚙️ Prepare SDK Environment
         run: |
           echo "::group::📂 Setting up SDK Cache Directory"
@@ -378,112 +398,30 @@ jobs:
           fi
           echo "::endgroup::"
 
-      - name: 🔨 Build Packages
+      - name: 🏗️ Build OpenWrt Packages (Universal)
         run: |
-          cd ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          
-          # Set verbosity
-          V_FLAG=""
-          case "${{ inputs.verbose }}" in
-            "1") V_FLAG="V=s" ;;
-            "2") V_FLAG="V=sc" ;;
-          esac
-          
-          PACKAGES="${{ steps.determine_packages.outputs.packages }}"
-          BUILD_SUCCESS=true
-          FAILED_PACKAGES=""
-          SUCCESSFUL_PACKAGES=""
-          
-          echo "::group::🔨 Building Packages"
-          
-          if [ "$PACKAGES" = "all" ]; then
-            echo "📦 Building all available packages..."
-            if ! make package/compile $V_FLAG -j$(nproc); then
-              echo "⚠️ Some packages failed with parallel build, trying sequential..."
-              if ! make package/compile $V_FLAG -j1; then
-                BUILD_SUCCESS=false
-              fi
-            fi
-          else
-            # Build specific packages
-            for PKG in $PACKAGES; do
-              echo "::group::📦 Building Package: $PKG"
-              
-              # Check if package exists
-              PKG_FOUND=false
-              for FEED_PATH in feeds/custom feeds/packages feeds/luci feeds/routing package; do
-                if [ -d "$FEED_PATH/$PKG" ]; then
-                  PKG_FOUND=true
-                  echo "✅ Found package $PKG in $FEED_PATH"
-                  
-                  # Try parallel build first, then sequential
-                  if make package/$PKG/compile $V_FLAG -j$(nproc); then
-                    echo "✅ Successfully built package: $PKG"
-                    SUCCESSFUL_PACKAGES="$SUCCESSFUL_PACKAGES $PKG"
-                  elif make package/$PKG/compile $V_FLAG -j1; then
-                    echo "✅ Successfully built package: $PKG (sequential)"
-                    SUCCESSFUL_PACKAGES="$SUCCESSFUL_PACKAGES $PKG"
-                  else
-                    echo "❌ Failed to build package: $PKG"
-                    FAILED_PACKAGES="$FAILED_PACKAGES $PKG"
-                    BUILD_SUCCESS=false
-                  fi
-                  break
-                fi
-              done
-              
-              if [ "$PKG_FOUND" = "false" ]; then
-                echo "❌ Package $PKG not found in any feed"
-                FAILED_PACKAGES="$FAILED_PACKAGES $PKG"
-                BUILD_SUCCESS=false
-              fi
-              echo "::endgroup::"
-            done
-          fi
-          
-          echo "::endgroup::"
-          
-          # Summary
-          if [ -n "$SUCCESSFUL_PACKAGES" ]; then
-            echo "✅ Successfully built packages: $SUCCESSFUL_PACKAGES"
-          fi
-          if [ -n "$FAILED_PACKAGES" ]; then
-            echo "::warning::Failed to build packages: $FAILED_PACKAGES"
-          fi
-          
-          # Set outputs
-          echo "successful_packages=$SUCCESSFUL_PACKAGES" >> $GITHUB_OUTPUT
-          echo "failed_packages=$FAILED_PACKAGES" >> $GITHUB_OUTPUT
+          chmod +x .github/scripts/build-openwrt.sh
+          mkdir -p /artifacts
+          # Pass workflow inputs as env vars
+          FEEDNAME="${{ inputs.feedname || 'action' }}" \
+          EXTRA_FEEDS="${{ inputs.extra_feeds || '' }}" \
+          PACKAGES="${{ inputs.compile_pkg || '' }}" \
+          BUILD_LOG="${{ inputs.verbose || '1' }}" \
+          KEY_BUILD="${{ secrets.KEY_BUILD || '' }}" \
+          INDEX="${{ inputs.index || '0' }}" \
+          V="${{ inputs.verbose == '2' && 'sc' || (inputs.verbose == '1' && 's' || '') }}" \
+          bash .github/scripts/build-openwrt.sh
 
       - name: 🗂️ Collect and Move Packages
         if: always()
         run: |
           echo "::group::🗂️ Collecting Built Packages"
-          cd ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          
-          PACKAGES_TO_COLLECT="${{ steps.determine_packages.outputs.packages }}"
-          PACKAGE_COUNT=0
-          
-          # Find and collect packages
-          if [ "$PACKAGES_TO_COLLECT" = "all" ]; then
-            # Collect all built packages
-            find bin/packages -type f \( -name "*.ipk" -o -name "*.apk" \) -exec cp {} "$GITHUB_WORKSPACE/resuildpackages/" \; 2>/dev/null || true
-            PACKAGE_COUNT=$(find "$GITHUB_WORKSPACE/resuildpackages/" -name "*.ipk" -o -name "*.apk" | wc -l)
-          else
-            # Collect specific packages and their dependencies
-            for PKG in $PACKAGES_TO_COLLECT; do
-              # Find package files
-              find bin/packages -type f \( -name "${PKG}_*.ipk" -o -name "${PKG}_*.apk" \) -exec cp {} "$GITHUB_WORKSPACE/resuildpackages/" \; 2>/dev/null || true
-            done
-            PACKAGE_COUNT=$(find "$GITHUB_WORKSPACE/resuildpackages/" -name "*.ipk" -o -name "*.apk" | wc -l)
+          if [ -d /artifacts/bin ]; then
+            cp -r /artifacts/bin/* ${{ github.workspace }}/resuildpackages/ 2>/dev/null || true
           fi
-          
-          # Copy package indices
-          find bin/packages -name "Packages*" -exec cp {} "$GITHUB_WORKSPACE/resuildpackages/" \; 2>/dev/null || true
-          
-          echo "📦 Collected $PACKAGE_COUNT packages"
-          echo "✨ Final package structure:"
-          ls -la "$GITHUB_WORKSPACE/resuildpackages/" || echo "No packages found"
+          if [ -d /artifacts/logs ]; then
+            cp -r /artifacts/logs/* ${{ github.workspace }}/resuildpackages/ 2>/dev/null || true
+          fi
           echo "::endgroup::"
 
       - name: 📤 Upload Packages Artifact
