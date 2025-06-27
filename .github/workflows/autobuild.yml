@@ -311,22 +311,8 @@ jobs:
           else
             echo "::group::📦 Building specific packages with validation"
             
-            # Get enabled packages for architecture check
-            make \
-              -f .config \
-              -f tmp/.packagedeps \
-              -f <(echo "\$(info \$(sort \$(package-y) \$(package-m)))"; echo -en "a:\n\t@:") \
-                | tr ' ' '\n' > enabled-package-subdirs.txt
-            
             for PKG in $PACKAGES; do
               echo "::group::📦 Processing Package: $PKG"
-              
-              # Check if package is supported on this architecture
-              if ! grep -m1 -qE "(^|/)$PKG$" enabled-package-subdirs.txt; then
-                echo "::warning file=$PKG::Skipping $PKG due to unsupported architecture"
-                echo "::endgroup::"
-                continue
-              fi
               
               # Install package
               ./scripts/feeds install -p "$FEEDNAME" -f "$PKG"
@@ -335,6 +321,8 @@ jobs:
               echo "::group::📥 Downloading sources for $PKG"
               make \
                 BUILD_LOG="$BUILD_LOG" \
+                CONFIG_SIGNED_PACKAGES="${CONFIG_SIGNED_PACKAGES:-n}" \
+                CONFIG_AUTOREMOVE=y \
                 IGNORE_ERRORS="$IGNORE_ERRORS" \
                 "package/$PKG/download" V=s
               echo "::endgroup::"
