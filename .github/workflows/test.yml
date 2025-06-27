@@ -250,6 +250,8 @@ jobs:
             if [ -d "$GITHUB_WORKSPACE/feeds" ]; then
               CUSTOM_PKGS=$(find $GITHUB_WORKSPACE/feeds -name Makefile -exec dirname {} \; | xargs -n1 basename | tr '\n' ' ')
               PACKAGES="$PACKAGES $CUSTOM_PKGS"
+              mkdir -p feeds/custom
+              cp -r $CUSTOM_PKGS feeds/custom/
             fi
           fi
           
@@ -281,7 +283,7 @@ jobs:
               echo "::group::📦 Building Package: $PKG"
               
               # Try different package paths
-              if [ -d "feeds/custom/$PKG" ] || [ -d "package/$PKG" ]; then
+              if [ -d "feeds/custom/$PKG" ]; then
                 make package/$PKG/compile $V_FLAG -j$(nproc) || {
                   echo "❌ Failed to build custom package: $PKG"
                   BUILD_SUCCESS=false
