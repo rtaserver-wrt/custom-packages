@@ -222,21 +222,20 @@ jobs:
           echo "Migrasi semua package ke feeds/custom selesai."
           
           echo "::group::📜 Configuring Feeds"
-          # Setup feeds configuration
+          # Tentukan branch untuk feeds
           if [[ "${{ matrix.release }}" == "SNAPSHOT" ]]; then
-            SDK_VER="main"
+            FEED_BRANCH="master"
           elif [[ "${{ matrix.release }}" == "24.10.2" ]]; then
-            SDK_VER="openwrt-24.10"
+            FEED_BRANCH="openwrt-24.10"
           elif [[ "${{ matrix.release }}" == "23.05.5" ]]; then
-            SDK_VER="openwrt-23.05"
+            FEED_BRANCH="openwrt-23.05"
           fi
-          
-          # Buat feeds.conf hanya dengan custom
+          # Buat feeds.conf dengan branch yang benar
           cat > feeds.conf << EOF
-          src-git base https://github.com/openwrt/openwrt.git;${SDK_VER}
-          src-git packages https://github.com/openwrt/packages.git;${SDK_VER}
-          src-git luci https://github.com/openwrt/luci.git;${SDK_VER}
-          src-git routing https://git.openwrt.org/feed/routing.git;${SDK_VER}
+          src-git base https://github.com/openwrt/openwrt.git;${FEED_BRANCH}
+          src-git packages https://github.com/openwrt/packages.git;${FEED_BRANCH}
+          src-git luci https://github.com/openwrt/luci.git;${FEED_BRANCH}
+          src-git routing https://git.openwrt.org/feed/routing.git;${FEED_BRANCH}
           src-link custom $GITHUB_WORKSPACE/feeds/custom
           EOF
           echo "Feeds configuration:"
