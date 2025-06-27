@@ -114,8 +114,21 @@ jobs:
           sudo -E apt-get -qq autoremove --purge
           sudo -E apt-get -qq clean
 
+      - name: Cache SDK
+        id: cache-sdk
+        uses: actions/cache@v4
+        with:
+          path: sdk
+          key: ${{ runner.os }}-sdk-${{ matrix.platform }}-${{ matrix.url_sdk }}
+          restore-keys: |
+            ${{ runner.os }}-sdk-${{ matrix.platform }}-
+      
       - name: ${{ matrix.platform }} sdk download
         run: |
+          if [ -d "sdk" ] && [ -f "sdk/scripts/feeds" ]; then
+            echo "SDK already cached, skipping download and extraction."
+            exit 0
+          fi
           # Download and extract SDK with proper error handling
           echo "Downloading SDK from: ${{ matrix.url_sdk }}"
           wget -q --retry-connrefused --waitretry=3 --read-timeout=20 --timeout=15 -t 3 "${{ matrix.url_sdk }}"
