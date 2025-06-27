@@ -8,8 +8,12 @@ on:
         default: ''
       without_pages:
         description: "Skip deploy to GitHub Pages"
+        type: choice
         required: false
         default: 'false'
+        options:
+          - 'true'
+          - 'false'
 
 env:
   TZ: Asia/Jakarta
