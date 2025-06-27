@@ -228,8 +228,11 @@ jobs:
           EOF
           
           # Add custom feeds if they exist
-          if [ -d "$GITHUB_WORKSPACE/feeds" ]; then
-            echo "src-link custom $GITHUB_WORKSPACE/feeds" >> feeds.conf
+          if [ -d "$GITHUB_WORKSPACE/feeds/luci" ]; then
+            echo "src-link luci_custom $GITHUB_WORKSPACE/feeds/luci" >> feeds.conf
+          fi
+          if [ -d "$GITHUB_WORKSPACE/feeds/packages" ]; then
+            echo "src-link packages_custom $GITHUB_WORKSPACE/feeds/packages" >> feeds.conf
           fi
           
           echo "Feeds configuration:"
@@ -284,29 +287,31 @@ jobs:
             PACKAGES="${{ inputs.compile_pkg }}"
             echo "📦 Building specific packages: $PACKAGES"
           else
-            # Build packages from feeds
             PACKAGES=""
-            
-            # Add custom packages from feeds directory
-            if [ -d "$GITHUB_WORKSPACE/feeds" ]; then
-              echo "🔍 Scanning custom feeds directory..."
-              # Find all Makefile packages in custom feeds
-              CUSTOM_PKGS=$(find "$GITHUB_WORKSPACE/feeds" -name Makefile -type f | while read makefile; do
+            # Cari custom packages di feeds/luci dan feeds/packages
+            if [ -d "$GITHUB_WORKSPACE/feeds/luci" ]; then
+              echo "🔍 Scanning custom luci feeds..."
+              for makefile in $GITHUB_WORKSPACE/feeds/luci/*/Makefile; do
+                [ -f "$makefile" ] || continue
                 pkg_dir=$(dirname "$makefile")
                 pkg_name=$(basename "$pkg_dir")
-                # Verify it's a valid package by checking for PKG_NAME
                 if grep -q "PKG_NAME" "$makefile" 2>/dev/null; then
-                  echo "$pkg_name"
+                  PACKAGES="$PACKAGES $pkg_name"
                 fi
-              done | sort -u | tr '\n' ' ')
-              
-              if [ -n "$CUSTOM_PKGS" ]; then
-                PACKAGES="$PACKAGES $CUSTOM_PKGS"
-                echo "📦 Found custom packages: $CUSTOM_PKGS"
-              fi
+              done
             fi
-            
-            # If no custom packages found, build common packages
+            if [ -d "$GITHUB_WORKSPACE/feeds/packages" ]; then
+              echo "🔍 Scanning custom packages feeds..."
+              for makefile in $GITHUB_WORKSPACE/feeds/packages/*/Makefile; do
+                [ -f "$makefile" ] || continue
+                pkg_dir=$(dirname "$makefile")
+                pkg_name=$(basename "$pkg_dir")
+                if grep -q "PKG_NAME" "$makefile" 2>/dev/null; then
+                  PACKAGES="$PACKAGES $pkg_name"
+                fi
+              done
+            fi
+            # Jika tidak ada custom packages, build all
             if [ -z "$PACKAGES" ]; then
               echo "📦 No custom packages found, will build available feed packages"
               PACKAGES="all"
