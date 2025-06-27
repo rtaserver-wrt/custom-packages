@@ -1,450 +1,207 @@
-# Copyright (C) 2025 rtaserver-wrt
-#
-name: AutoCompiler OpenWrt Packages
-
+name: "Auto compile with openwrt sdk"
 on:
-  workflow_run:
-    workflows: ["Auto Sync App"]
-    types:
-      - completed
-
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '.github/workflows/**'
-      - 'README.md'
-
   workflow_dispatch:
     inputs:
-      release:
-        description: 'Build for a specific release. Leave empty to build for all.'
-        required: false
-        default: ''
-        type: choice
-        options:
-          - ''
-          - 'SNAPSHOT'
-          - '24.10.2'
-          - '23.05.5'
-      arch:
-        description: 'Build for a specific arch (e.g., x86_64, aarch64_cortex-a53). Leave empty to build for all.'
-        required: false
-        default: ''
-        type: string
       compile_pkg:
-        description: 'Compile specific packages (space-separated). Default: all in feeds.'
+        description: "Compile specific package, leave empty to compile all packages"
         required: false
         default: ''
-        type: string
-      verbose:
-        description: 'Verbose build output'
-        required: false
-        default: '0'
-        type: choice
-        options:
-          - '0' # No verbose
-          - '1' # V=s
-          - '2' # V=sc
       without_pages:
-        description: 'Do not build and deploy GitHub Pages'
-        required: true
-        default: false
-        type: boolean
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: auto-compiler-${{ github.ref }}
-  cancel-in-progress: true
+        description: "Skip deploy to GitHub Pages"
+        required: false
+        default: 'false'
 
 env:
   TZ: Asia/Jakarta
 
 jobs:
-  build_ipk:
-    permissions:
-      contents: write
-    name: 🏗️ Build Packages [${{ matrix.release }}-${{ matrix.arch }}]
+  job_auto_compile:
     runs-on: ubuntu-22.04
+    name: build (${{ matrix.platform }})
     strategy:
       fail-fast: false
       matrix:
-        release: ${{ fromJSON(inputs.release && format('["{0}"]', inputs.release) || '["SNAPSHOT", "24.10.2", "23.05.5"]') }}
-        arch: ${{ fromJSON(inputs.arch && format('["{0}"]', inputs.arch) || '["x86_64", "mips_24kc", "mipsel_24kc", "arm_cortex-a7_neon-vfpv4", "aarch64_cortex-a53", "aarch64_cortex-a72", "aarch64_generic"]') }}
+        include:
+          - platform: x86_64
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/x86/64/openwrt-sdk-24.10.1-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
 
-    env:
-      SDK_CACHE_DIR: ${{ github.workspace }}/sdk_cache
+          - platform: aarch64_generic
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/rockchip/armv8/openwrt-sdk-24.10.1-rockchip-armv8_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: aarch64_cortex-a53
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/mvebu/cortexa53/openwrt-sdk-24.10.1-mvebu-cortexa53_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: aarch64_cortex-a72
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/mvebu/cortexa72/openwrt-sdk-24.10.1-mvebu-cortexa72_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: arm_cortex-a5_vfpv4
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/at91/sama5/openwrt-sdk-24.10.1-at91-sama5_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: arm_cortex-a7
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/mediatek/mt7629/openwrt-sdk-24.10.1-mediatek-mt7629_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: arm_cortex-a7_neon-vfpv4
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/sunxi/cortexa7/openwrt-sdk-24.10.1-sunxi-cortexa7_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: arm_cortex-a8_vfpv3
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/sunxi/cortexa8/openwrt-sdk-24.10.1-sunxi-cortexa8_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: arm_cortex-a9
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/bcm53xx/generic/openwrt-sdk-24.10.1-bcm53xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: arm_cortex-a9_neon
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/zynq/generic/openwrt-sdk-24.10.1-zynq-generic_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: arm_cortex-a9_vfpv3-d16
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/mvebu/cortexa9/openwrt-sdk-24.10.1-mvebu-cortexa9_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: arm_cortex-a15_neon-vfpv4
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/ipq806x/generic/openwrt-sdk-24.10.1-ipq806x-generic_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: mips_24kc
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/ath79/generic/openwrt-sdk-24.10.1-ath79-generic_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: mips_4kec
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/realtek/rtl838x/openwrt-sdk-24.10.1-realtek-rtl838x_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: mips_mips32
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/bcm53xx/generic/openwrt-sdk-24.10.1-bcm53xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: mipsel_24kc
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/ramips/rt288x/openwrt-sdk-24.10.1-ramips-rt288x_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: mipsel_74kc
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/ramips/rt3883/openwrt-sdk-24.10.1-ramips-rt3883_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
+
+          - platform: mipsel_mips32
+            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/bcm47xx/generic/openwrt-sdk-24.10.1-bcm47xx-generic_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+            sdk_ver: "24.10"
 
     steps:
-      - name: 🚀 Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 🛠️ Install System Dependencies
+      - name: Initialization ${{ matrix.platform }} compile environment
         run: |
-          echo "::group::🔧 Cleaning system and installing dependencies"
           sudo -E rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d /usr/local/lib/android
+          echo "install packages!!!!!!"
           sudo -E apt-get -qq update
-          sudo -E apt-get -qq install build-essential clang flex bison g++ gawk \
-            gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev \
-            python3-distutils python3-setuptools rsync swig unzip zlib1g-dev \
-            file wget zstd python3-pyelftools curl jq
+          sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev python3-distutils python3-setuptools rsync swig unzip zlib1g-dev file wget
           sudo -E apt-get -qq autoremove --purge
           sudo -E apt-get -qq clean
-          echo "::endgroup::"
 
-      - name: 🛡️ Verify python3-setuptools Installation
+      - name: ${{ matrix.platform }} sdk download
         run: |
-          echo "::group::🔍 Verifying python3-setuptools installation"
-          if ! python3 -c 'import setuptools' 2>/dev/null; then
-            echo "python3-setuptools not found, attempting to install again..."
-            sudo -E apt-get -qq update
-            sudo -E apt-get -qq install python3-setuptools
-            if ! python3 -c 'import setuptools' 2>/dev/null; then
-              echo "❌ python3-setuptools installation failed!"
-              python3 --version
-              dpkg -l | grep python3
-              exit 1
-            else
-              echo "✅ python3-setuptools installed successfully."
+          wget ${{ matrix.url_sdk }}
+          file_name=$(echo ${{matrix.url_sdk}} | awk -F/ '{print $NF}')
+          mkdir sdk && tar --zstd -x -f $file_name -C ./sdk --strip-components=1
+          cd sdk
+
+      - name: ${{ matrix.platform }} feeds configuration packages
+        run: |
+          cd sdk
+          echo "src-git base https://github.com/openwrt/openwrt.git;openwrt-${{ matrix.sdk_ver }}" > feeds.conf
+          echo "src-git packages https://github.com/openwrt/packages.git;openwrt-${{ matrix.sdk_ver }}" >> feeds.conf
+          echo "src-git luci https://github.com/openwrt/luci.git;openwrt-${{ matrix.sdk_ver }}" >> feeds.conf
+          echo "src-git routing https://git.openwrt.org/feed/routing.git;openwrt-${{ matrix.sdk_ver }}"  >> feeds.conf
+          echo "src-link custom $GITHUB_WORKSPACE/feeds" >> feeds.conf
+
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a -f -p custom
+
+          rm -rf feeds/packages/lang/golang
+          git clone https://github.com/sbwml/packages_lang_golang -b 24.x feeds/packages/lang/golang
+
+          echo "CONFIG_ALL_NONSHARED=n" > .config
+          echo "CONFIG_ALL_KMODS=n" >> .config
+          echo "CONFIG_ALL=n" >> .config
+          echo "CONFIG_AUTOREMOVE=n" >> .config
+          echo "CONFIG_SIGNED_PACKAGES=n" >> .config
+
+          make defconfig
+
+
+      - name: ${{ matrix.platform }} download
+        run: |
+          cd sdk
+          make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+
+      - name: 📋 Read Package List from Feeds
+        if: ${{ inputs.compile_pkg == '' }}
+        id: list_package
+        run: |
+          echo "::group::📋 Reading package list"
+          find_packages() {
+            local feed_dir="$1"
+            if [ -d "$feed_dir" ]; then
+              find -L "$feed_dir" -mindepth 1 -maxdepth 2 -type f -name "Makefile" -exec dirname {} \; | xargs -n1 basename | tr '\n' ' '
             fi
+          }
+          
+          packages=$(find_packages "$GITHUB_WORKSPACE/feeds")
+          
+          echo "📦 Found packages: ${packages:-None}"
+
+          if [ ${{ inputs.compile_pkg }} != '' ]; then
+            combined_packages=$(echo "$packages" | xargs -n1 | sort -u | xargs)
           else
-            echo "✅ python3-setuptools is already installed."
+            combined_packages="${{ inputs.compile_pkg }}"
           fi
-          echo "::endgroup::"
 
-      - name: ⚙️ Prepare SDK Environment
+          echo "✨ Combined unique packages: $combined_packages"
+          echo "::endgroup::"
+          echo "content=$combined_packages" >> $GITHUB_OUTPUT
+
+      - name: ${{ matrix.platform }} compile
+        id: compile
         run: |
-          echo "::group::📂 Setting up SDK Cache Directory"
-          mkdir -p $SDK_CACHE_DIR
-          chmod 777 $SDK_CACHE_DIR
-          echo "SDK Cache Directory: $SDK_CACHE_DIR"
-          
-          # Create resuildpackages directory early
-          mkdir -p $GITHUB_WORKSPACE/resuildpackages
-          echo "::endgroup::"
-
-      - name: 📦 Cache OpenWrt SDK
-        id: cache-sdk
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          key: sdk-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v4
-          restore-keys: |
-            sdk-${{ runner.os }}-${{ matrix.release }}-
-            sdk-${{ runner.os }}-
-
-      - name: 📥 Download and Setup OpenWrt SDK
-        if: steps.cache-sdk.outputs.cache-hit != 'true'
-        run: |
-          RELEASE="${{ matrix.release }}"
-          ARCH="${{ matrix.arch }}"
-          
-          echo "::group::⚙️ SDK Configuration for Release: $RELEASE, Arch: $ARCH"
-          
-          # Configure SDK parameters based on release
-          if [[ "$RELEASE" == "SNAPSHOT" ]]; then
-            URL_PATH="snapshots/targets"
-            GCC_VERSION="14.3.0"
-            FILE_EXT="tar.zst"
-            echo "📦 Using SNAPSHOT build"
-          elif [[ "$RELEASE" == "24.10.2" ]]; then
-            URL_PATH="releases/24.10.2/targets"
-            GCC_VERSION="13.3.0"
-            FILE_EXT="tar.zst"
-            echo "📦 Using stable release 24.10.2"
-          elif [[ "$RELEASE" == "23.05.5" ]]; then
-            URL_PATH="releases/23.05.5/targets"
-            GCC_VERSION="12.3.0"
-            FILE_EXT="tar.xz"
-            echo "📦 Using stable release 23.05.5"
-          fi
-          
-          # Map architecture to target
-          case "$ARCH" in
-            "x86_64") TARGET="x86/64" ;;
-            "mips_24kc") TARGET="ath79/generic" ;;
-            "mipsel_24kc") TARGET="ramips/mt7621" ;;
-            "arm_cortex-a7_neon-vfpv4") TARGET="bcm27xx/bcm2709" ;;
-            "aarch64_cortex-a53") TARGET="bcm27xx/bcm2710" ;;
-            "aarch64_cortex-a72") TARGET="bcm27xx/bcm2711" ;;
-            "aarch64_generic") TARGET="rockchip/armv8" ;;
-            *) echo "❌ Unsupported architecture: $ARCH"; exit 1 ;;
-          esac
-          
-          SDK_FLAVOR=$(echo $TARGET | tr '/' '-')
-          SDK_SUFFIX_EABI=$(if [[ "$ARCH" =~ arm_cortex ]]; then echo "_eabi"; fi)
-          
-          if [[ "$RELEASE" == "SNAPSHOT" ]]; then
-            SDK_NAME="openwrt-sdk-${SDK_FLAVOR}_gcc-${GCC_VERSION}_musl${SDK_SUFFIX_EABI}.Linux-x86_64"
-          else
-            SDK_NAME="openwrt-sdk-${RELEASE}-${SDK_FLAVOR}_gcc-${GCC_VERSION}_musl${SDK_SUFFIX_EABI}.Linux-x86_64"
-          fi
-          
-          SDK_URL="https://downloads.openwrt.org/${URL_PATH}/${TARGET}/${SDK_NAME}.${FILE_EXT}"
-          echo "SDK URL: $SDK_URL"
-          echo "::endgroup::"
-          
-          echo "::group::📥 Downloading SDK"
-          # Retry logic with exponential backoff
-          for i in {1..5}; do
-            if wget -q --timeout=60 --tries=1 "$SDK_URL" -O "$SDK_CACHE_DIR/sdk.${FILE_EXT}"; then
-              echo "✅ SDK downloaded successfully on attempt $i"
-              break
-            else
-              if [ $i -eq 5 ]; then
-                echo "❌ Failed to download SDK after 5 attempts"
-                echo "::error::Unable to download SDK from $SDK_URL"
-                exit 1
+          cd sdk
+          for package in ${{ steps.list_package.outputs.content }}; do
+              if [ -d "feeds/custom/$package" ]; then
+                  echo "-----------begin compile $package ---------------"
+                  sleep 10s
+                  make package/feeds/custom/$package/compile -j$(nproc) V=s
+                  echo "-----------compiled $package ---------------"
+                  echo ""
               fi
-              echo "⚠️ Download attempt $i failed, retrying in $((i * 10)) seconds..."
-              sleep $((i * 10))
-            fi
           done
-          echo "::endgroup::"
-          
-          echo "::group::📦 Extracting SDK"
-          mkdir -p "$SDK_CACHE_DIR/openwrt-sdk"
-          if [[ "$FILE_EXT" == "tar.zst" ]]; then
-            if ! tar --use-compress-program=zstd -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"; then
-              echo "❌ Failed to extract SDK (zstd)"
-              exit 1
-            fi
-          else
-            if ! tar -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"; then
-              echo "❌ Failed to extract SDK (tar)"
-              exit 1
-            fi
-          fi
-          rm "$SDK_CACHE_DIR/sdk.${FILE_EXT}"
-          echo "✅ SDK extracted to $SDK_CACHE_DIR/openwrt-sdk"
-          echo "::endgroup::"
 
-      - name: 📦 Cache OpenWrt dl Directory
-        id: cache-dl
-        uses: actions/cache@v4
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Organize ${{ matrix.platform }} files
+        id: organize
+        if: steps.compile.outputs.status == 'success'
+        run: |
+          cd sdk
+          mkdir releases/${{ matrix.sdk_ver }}/${{ matrix.platform }}/packages
+          cp -r bin/packages/*/custom/*.ipk releases/${{ matrix.sdk_ver }}/${{ matrix.platform }}/packages/
+          echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Upload ${{ matrix.platform }} packages
+        use: actions/upload-artifact@v4
         with:
-          path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk/dl
-          key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v4
-          restore-keys: |
-            dl-${{ runner.os }}-${{ matrix.release }}-
-            dl-${{ runner.os }}-
-
-      - name: 🛠️ Setup Custom Feeds
-        run: |
-          echo "::group::📦 Preparing Custom Feeds"
-          mkdir -p "$GITHUB_WORKSPACE/feeds/custom"
-          
-          # Migrate packages from luci and packages to custom
-          for source_dir in "$GITHUB_WORKSPACE/feeds/luci" "$GITHUB_WORKSPACE/feeds/packages"; do
-            if [ -d "$source_dir" ]; then
-              echo "📁 Migrating packages from $(basename "$source_dir")..."
-              for dir in "$source_dir"/*; do
-                [ -d "$dir" ] || continue
-                pkg_name=$(basename "$dir")
-                target_dir="$GITHUB_WORKSPACE/feeds/custom/$pkg_name"
-                
-                # Only copy if doesn't exist in custom
-                if [ ! -d "$target_dir" ]; then
-                  cp -r "$dir" "$target_dir"
-                  echo "  ✅ Migrated: $pkg_name"
-                else
-                  echo "  ⚠️ Skipped (exists): $pkg_name"
-                fi
-              done
-            fi
-          done
-          
-          echo "📦 Custom feeds preparation completed"
-          echo "::endgroup::"
-
-      - name: 🛠️ Setup SDK Feeds and Configuration
-        run: |
-          cd ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          
-          echo "::group::📜 Configuring Feeds"
-          # Determine branch for feeds
-          if [[ "${{ matrix.release }}" == "SNAPSHOT" ]]; then
-            FEED_BRANCH="master"
-          elif [[ "${{ matrix.release }}" == "24.10.2" ]]; then
-            FEED_BRANCH="openwrt-24.10"
-          elif [[ "${{ matrix.release }}" == "23.05.5" ]]; then
-            FEED_BRANCH="openwrt-23.05"
-          else
-            FEED_BRANCH="master"
-          fi
-          
-          # Create feeds.conf with correct branch
-          cat > feeds.conf << EOF
-          src-git base https://github.com/openwrt/openwrt.git;${FEED_BRANCH}
-          src-git packages https://github.com/openwrt/packages.git;${FEED_BRANCH}
-          src-git luci https://github.com/openwrt/luci.git;${FEED_BRANCH}
-          src-git routing https://git.openwrt.org/feed/routing.git;${FEED_BRANCH}
-          src-link custom $GITHUB_WORKSPACE/feeds/custom
-          EOF
-          
-          echo "Feeds configuration:"
-          cat feeds.conf
-          echo "::endgroup::"
-          
-          echo "::group::🔄 Updating and Installing Feeds"
-          # Update feeds with error handling
-          if ! ./scripts/feeds update -a; then
-            echo "⚠️ Some feeds failed to update. Checking logs..."
-            find logs/feeds -name "*.log" 2>/dev/null | head -5 | while read log; do
-              echo "--- Error in $log ---"
-              tail -20 "$log" || true
-              echo "---"
-            done
-            echo "Continuing with installation..."
-          fi
-          
-          # Install feeds
-          if ! ./scripts/feeds install -a; then
-            echo "❌ Failed to install feeds"
-            ./scripts/feeds list | head -20
-            exit 1
-          fi
-          
-          # Upgrade golang if available
-          if [ -d "feeds/packages/lang/golang" ]; then
-            echo "🔧 Updating golang to latest version"
-            rm -rf feeds/packages/lang/golang
-            if ! git clone https://github.com/sbwml/packages_lang_golang -b 24.x feeds/packages/lang/golang; then
-              echo "⚠️ Failed to clone golang, using default"
-            fi
-          fi
-          echo "::endgroup::"
-          
-          echo "::group::📝 Generating Build Configuration"
-          cat > .config << EOF
-          CONFIG_ALL_NONSHARED=n
-          CONFIG_ALL_KMODS=n
-          CONFIG_ALL=n
-          CONFIG_AUTOREMOVE=n
-          CONFIG_SIGNED_PACKAGES=n
-          CONFIG_BUILDBOT=y
-          CONFIG_DEVEL=y
-          CONFIG_CCACHE=y
-          EOF
-          
-          if ! make defconfig; then
-            echo "❌ Failed to generate default configuration"
-            exit 1
-          fi
-          echo "✅ Default configuration generated"
-          echo "::endgroup::"
-
-      - name: 📋 Determine Packages to Build
-        id: determine_packages
-        run: |
-          cd ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          
-          if [[ -n "${{ inputs.compile_pkg }}" ]]; then
-            PACKAGES="${{ inputs.compile_pkg }}"
-            echo "📦 Building specific packages: $PACKAGES"
-          else
-            PACKAGES=""
-            # Find custom packages
-            if [ -d "$GITHUB_WORKSPACE/feeds/custom" ]; then
-              echo "🔍 Scanning custom feeds..."
-              for makefile in $GITHUB_WORKSPACE/feeds/custom/*/Makefile; do
-                [ -f "$makefile" ] || continue
-                pkg_dir=$(dirname "$makefile")
-                pkg_name=$(basename "$pkg_dir")
-                
-                # Verify it's a valid package
-                if grep -q "PKG_NAME\|Package:" "$makefile" 2>/dev/null; then
-                  PACKAGES="$PACKAGES $pkg_name"
-                fi
-              done
-            fi
-            
-            # Fallback to all available packages if no custom packages
-            if [ -z "$(echo $PACKAGES | xargs)" ]; then
-              echo "📦 No custom packages found, building all available packages"
-              PACKAGES="all"
-            fi
-          fi
-          
-          PACKAGES=$(echo "$PACKAGES" | xargs -n1 | sort -u | xargs)
-          echo "📦 Final packages to build: $PACKAGES"
-          echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
-
-      - name: 📥 Download Sources
-        run: |
-          cd ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          echo "::group::📥 Downloading package sources"
-          
-          # Download with retry logic
-          if ! make download -j8; then
-            echo "⚠️ Parallel download failed, trying sequential..."
-            if ! make download -j1 V=s; then
-              echo "❌ Failed to download sources"
-              exit 1
-            fi
-          fi
-          
-          # Check for corrupted downloads
-          corrupted_files=$(find dl -size -1024c 2>/dev/null | wc -l)
-          if [ $corrupted_files -gt 0 ]; then
-            echo "⚠️ Found $corrupted_files potentially corrupted files"
-            find dl -size -1024c -exec ls -l {} \;
-          fi
-          echo "::endgroup::"
-
-      - name: 🏗️ Build OpenWrt Packages (Universal)
-        run: |
-          chmod +x .github/scripts/build-openwrt.sh
-          mkdir -p /artifacts
-          # Pass workflow inputs as env vars
-          FEEDNAME="${{ inputs.feedname || 'action' }}" \
-          EXTRA_FEEDS="${{ inputs.extra_feeds || '' }}" \
-          PACKAGES="${{ inputs.compile_pkg || '' }}" \
-          BUILD_LOG="${{ inputs.verbose || '1' }}" \
-          KEY_BUILD="${{ secrets.KEY_BUILD || '' }}" \
-          INDEX="${{ inputs.index || '0' }}" \
-          V="${{ inputs.verbose == '2' && 'sc' || (inputs.verbose == '1' && 's' || '') }}" \
-          bash .github/scripts/build-openwrt.sh
-
-      - name: 🗂️ Collect and Move Packages
-        if: always()
-        run: |
-          echo "::group::🗂️ Collecting Built Packages"
-          if [ -d /artifacts/bin ]; then
-            cp -r /artifacts/bin/* ${{ github.workspace }}/resuildpackages/ 2>/dev/null || true
-          fi
-          if [ -d /artifacts/logs ]; then
-            cp -r /artifacts/logs/* ${{ github.workspace }}/resuildpackages/ 2>/dev/null || true
-          fi
-          echo "::endgroup::"
-
-      - name: 📤 Upload Packages Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: openwrt-packages-${{ matrix.release }}-${{ matrix.arch }}
-          path: ${{ github.workspace }}/resuildpackages/
-          retention-days: 30
-          if-no-files-found: warn
-
-      - name: 📤 Upload Build Logs on Failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs-${{ matrix.release }}-${{ matrix.arch }}
-          path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk/logs/
-          retention-days: 14
-          if-no-files-found: ignore
+          name: openwrt-packages-${{ matrix.sdk_ver }}-${{ matrix.platform }}
+          path: sdk/releases/${{ matrix.sdk_ver }}/${{ matrix.platform }}/packages
 
   push_packages:
-    needs: build_ipk
-    if: always() && needs.build_ipk.result != 'cancelled'
+    needs: job_auto_compile
+    if: success() || failure()
     name: 🚀 Push Packages to gh-pages
     permissions:
       contents: write
@@ -454,107 +211,38 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: 'gh-pages'
-          fetch-depth: 1
 
       - name: 📥 Download All Artifacts
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
-          pattern: openwrt-packages-*
-          merge-multiple: false
 
       - name: 📂 Organize Packages
         run: |
-          echo "::group::📂 Organizing packages into release directories"
-          
-          TOTAL_PACKAGES=0
-          RELEASES_UPDATED=""
-          
+          echo "::group::Sorting packages into release directories"
           for dir in ./artifacts/openwrt-packages-*; do
-            if [ -d "$dir" ] && [ "$(ls -A "$dir" 2>/dev/null)" ]; then
-              # Extract release and arch from directory name
-              DIR_NAME=$(basename "$dir")
-              RELEASE=$(echo "$DIR_NAME" | sed 's/openwrt-packages-//' | cut -d'-' -f1)
-              ARCH=$(echo "$DIR_NAME" | sed 's/openwrt-packages-[^-]*-//')
-              
-              # Determine target directory
-              if [[ "$RELEASE" == "SNAPSHOT" ]]; then
-                TARGET_DIR="releases/snapshot/packages/$ARCH"
-              else
-                VERSION_MAJOR=$(echo "$RELEASE" | cut -d'.' -f1-2)
-                TARGET_DIR="releases/$VERSION_MAJOR/packages/$ARCH"
-              fi
-              
-              echo "📦 Processing packages from $dir to $TARGET_DIR"
-              mkdir -p "$TARGET_DIR"
-              
-              # Count packages before moving
-              PKG_COUNT=$(find "$dir" -name "*.ipk" -o -name "*.apk" | wc -l)
-              if [ $PKG_COUNT -gt 0 ]; then
-                echo "   Found $PKG_COUNT packages for $RELEASE-$ARCH"
-                TOTAL_PACKAGES=$((TOTAL_PACKAGES + PKG_COUNT))
-                RELEASES_UPDATED="$RELEASES_UPDATED $RELEASE-$ARCH"
-                
-                # Move files
-                rsync -av "$dir/" "$TARGET_DIR/"
-              else
-                echo "   No packages found for $RELEASE-$ARCH"
-              fi
-            else
-              echo "⚠️ Empty or missing directory: $dir"
+            if [ -d "$dir" ]; then
+              mv $dir/* "./" 2>/dev/null || true
             fi
           done
-          
-          # Clean up artifact directories
-          rm -rf ./artifacts
-          
-          echo "✅ Total packages processed: $TOTAL_PACKAGES"
-          echo "📋 Releases updated: $RELEASES_UPDATED"
-          
-          # Store for commit message
-          echo "TOTAL_PACKAGES=$TOTAL_PACKAGES" >> $GITHUB_ENV
-          echo "RELEASES_UPDATED=$RELEASES_UPDATED" >> $GITHUB_ENV
           echo "::endgroup::"
+          
+          echo "::group::Final repository structure"
+          ls -R releases 2>/dev/null || true
+          echo "::endgroup::"
+          
+          rm -rf ./artifacts
 
       - name: 💾 Commit and Push Changes
         run: |
-          git config --local user.name "GitHub Action Bot"
+          git config --local user.name "GitHub Action"
           git config --local user.email "actions-user@users.noreply.github.com"
-          
-          # Add changes
-          git add releases/ || true
-          
-          # Check if there are changes to commit
+          git add releases
           if ! git diff --staged --quiet; then
-            COMMIT_MSG="🚀 Update Packages (${{ env.TOTAL_PACKAGES }} total) - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-            if [ -n "${{ env.RELEASES_UPDATED }}" ]; then
-              COMMIT_MSG="$COMMIT_MSG Updated releases:${{ env.RELEASES_UPDATED }}"
-            else
-              COMMIT_MSG="$COMMIT_MSG No specific releases updated"
-            fi
-            
-            if git commit -m "$COMMIT_MSG"; then
-              # Push with retry logic
-              for i in {1..3}; do
-                if git push origin gh-pages; then
-                  echo "✅ Successfully pushed package updates on attempt $i"
-                  break
-                else
-                  if [ $i -eq 3 ]; then
-                    echo "❌ Failed to push after 3 attempts"
-                    exit 1
-                  fi
-                  echo "⚠️ Push attempt $i failed, retrying in 5 seconds..."
-                  sleep 5
-                fi
-              done
-            else
-              echo "❌ Failed to commit changes"
-              git status
-              exit 1
-            fi
+            git commit -m "🚀 Update Packages - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            git push
           else
-            echo "✅ No new packages to commit"
+            echo "✅ No new packages to commit."
           fi
 
   build_and_deploy_pages:
@@ -586,11 +274,11 @@ jobs:
           SERVER_HOME: releases
         run: |
           if [ -f "./prenodes.sh" ]; then
-            echo "🔧 Running prenodes.sh..."
+            echo "Running prenodes.sh..."
             chmod +x ./prenodes.sh
             ./prenodes.sh
           else
-            echo "ℹ️ prenodes.sh not found, skipping"
+            echo "prenodes.sh not found, skipping."
           fi
 
       - name: 🛠️ Configure GitHub Pages
