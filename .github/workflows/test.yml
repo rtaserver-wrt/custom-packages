@@ -194,7 +194,7 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: Upload ${{ matrix.platform }} packages
-        use: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: openwrt-packages-${{ matrix.sdk_ver }}-${{ matrix.platform }}
           path: sdk/releases/${{ matrix.sdk_ver }}/${{ matrix.platform }}/packages
