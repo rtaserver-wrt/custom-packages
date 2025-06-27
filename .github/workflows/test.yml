@@ -209,6 +209,18 @@ jobs:
         run: |
           cd ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
           
+          # Migrasi otomatis semua package dari feeds/luci dan feeds/packages ke feeds/custom
+          mkdir -p "$GITHUB_WORKSPACE/feeds/custom"
+          for dir in "$GITHUB_WORKSPACE/feeds/luci"/* "$GITHUB_WORKSPACE/feeds/packages"/*; do
+            [ -d "$dir" ] || continue
+            pkg_name=$(basename "$dir")
+            # Jika belum ada di custom, baru copy
+            if [ ! -d "$GITHUB_WORKSPACE/feeds/custom/$pkg_name" ]; then
+              cp -r "$dir" "$GITHUB_WORKSPACE/feeds/custom/$pkg_name"
+            fi
+          done
+          echo "Migrasi semua package ke feeds/custom selesai."
+          
           echo "::group::📜 Configuring Feeds"
           # Setup feeds configuration
           if [[ "${{ matrix.release }}" == "SNAPSHOT" ]]; then
@@ -219,22 +231,14 @@ jobs:
             SDK_VER="openwrt-23.05"
           fi
           
-          # Create feeds.conf with proper feeds
+          # Buat feeds.conf hanya dengan custom
           cat > feeds.conf << EOF
           src-git base https://github.com/openwrt/openwrt.git;${SDK_VER}
           src-git packages https://github.com/openwrt/packages.git;${SDK_VER}
           src-git luci https://github.com/openwrt/luci.git;${SDK_VER}
           src-git routing https://git.openwrt.org/feed/routing.git;${SDK_VER}
+          src-link custom $GITHUB_WORKSPACE/feeds/custom
           EOF
-          
-          # Add custom feeds if they exist
-          if [ -d "$GITHUB_WORKSPACE/feeds/luci" ]; then
-            echo "src-link luci_custom $GITHUB_WORKSPACE/feeds/luci" >> feeds.conf
-          fi
-          if [ -d "$GITHUB_WORKSPACE/feeds/packages" ]; then
-            echo "src-link packages_custom $GITHUB_WORKSPACE/feeds/packages" >> feeds.conf
-          fi
-          
           echo "Feeds configuration:"
           cat feeds.conf
           echo "::endgroup::"
@@ -294,10 +298,10 @@ jobs:
             echo "📦 Building specific packages: $PACKAGES"
           else
             PACKAGES=""
-            # Cari custom packages di feeds/luci dan feeds/packages
-            if [ -d "$GITHUB_WORKSPACE/feeds/luci" ]; then
-              echo "🔍 Scanning custom luci feeds..."
-              for makefile in $GITHUB_WORKSPACE/feeds/luci/*/Makefile; do
+            # Cari custom packages di feeds/custom
+            if [ -d "$GITHUB_WORKSPACE/feeds/custom" ]; then
+              echo "🔍 Scanning custom feeds/custom..."
+              for makefile in $GITHUB_WORKSPACE/feeds/custom/*/Makefile; do
                 [ -f "$makefile" ] || continue
                 pkg_dir=$(dirname "$makefile")
                 pkg_name=$(basename "$pkg_dir")
@@ -306,18 +310,6 @@ jobs:
                 fi
               done
             fi
-            if [ -d "$GITHUB_WORKSPACE/feeds/packages" ]; then
-              echo "🔍 Scanning custom packages feeds..."
-              for makefile in $GITHUB_WORKSPACE/feeds/packages/*/Makefile; do
-                [ -f "$makefile" ] || continue
-                pkg_dir=$(dirname "$makefile")
-                pkg_name=$(basename "$pkg_dir")
-                if grep -q "PKG_NAME" "$makefile" 2>/dev/null; then
-                  PACKAGES="$PACKAGES $pkg_name"
-                fi
-              done
-            fi
-            # Jika tidak ada custom packages, build all
             if [ -z "$PACKAGES" ]; then
               echo "📦 No custom packages found, will build available feed packages"
               PACKAGES="all"
@@ -396,9 +388,8 @@ jobs:
                   break
                 fi
               done
-              
               if [ "$PKG_FOUND" = "false" ]; then
-                echo "⚠️ Package $PKG not found in any feed, skipping"
+                echo "⚠️ Package $PKG not found in feeds/custom, feeds/packages, feeds/luci, feeds/routing, or package. Skipping."
                 FAILED_PACKAGES="$FAILED_PACKAGES $PKG"
               fi
               echo "::endgroup::"
