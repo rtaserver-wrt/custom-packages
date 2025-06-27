@@ -1,7 +1,0 @@
-{
-  "version": 2,
-  "architecture": "mipsel_24kc",
-  "packages": {
-    "atinout": "0.9.1"
-  }
-}
