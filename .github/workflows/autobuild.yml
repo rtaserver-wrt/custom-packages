@@ -291,12 +291,6 @@ jobs:
           ./scripts/feeds update -a
           echo "::endgroup::"
           
-          echo "::group::📝 Generating Build Configuration"
-          if [ -d "$GITHUB_WORKSPACE/package" ]; then
-            echo "Copying custom package sources..."
-            cp -r $GITHUB_WORKSPACE/package/* ./package/ 2>/dev/null || true
-          fi
-          
           make defconfig
           echo "✅ Default configuration generated."
           echo "::endgroup::"
