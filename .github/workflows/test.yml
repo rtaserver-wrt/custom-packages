@@ -311,21 +311,20 @@ jobs:
           
           # Create directory structure
           mkdir -p "releases/${{ matrix.sdk_ver }}/${{ matrix.platform }}/packages"
+
+          ls -R bin/ || true
           
-          # Copy compiled packages if they exist
-          if [ -d "bin/packages" ]; then
-            # Find and copy all .ipk files from custom feed
-            find bin/packages -name "*.ipk" -path "*/custom/*" -exec cp {} "releases/${{ matrix.sdk_ver }}/${{ matrix.platform }}/packages/" \; 2>/dev/null || true
-            
-            # Check if any packages were actually copied
+          # Cari semua file .ipk dari feed custom di seluruh bin/
+          ipk_found=$(find bin/ -type f -name "*.ipk" -path "*/custom/*" | wc -l)
+          if [ "$ipk_found" -gt 0 ]; then
+            find bin/ -type f -name "*.ipk" -path "*/custom/*" -exec cp {} "releases/${{ matrix.sdk_ver }}/${{ matrix.platform }}/packages/" \; 2>/dev/null || true
             package_count=$(find "releases/${{ matrix.sdk_ver }}/${{ matrix.platform }}/packages" -name "*.ipk" | wc -l)
             echo "📦 Organized $package_count package(s)"
-            
             if [ "$package_count" -eq 0 ]; then
               echo "⚠️  Warning: No compiled packages found to organize"
             fi
           else
-            echo "⚠️  Warning: No bin/packages directory found"
+            echo "⚠️  Warning: No custom .ipk packages found in bin/"
           fi
           
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
