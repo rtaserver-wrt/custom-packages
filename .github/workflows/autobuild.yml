@@ -231,6 +231,11 @@ jobs:
             echo "Copying custom package sources..."
             cp -r $GITHUB_WORKSPACE/package/* ./package/ 2>/dev/null || true
           fi
+
+          echo "CONFIG_ALL_NONSHARED=n" > .config
+          echo "CONFIG_ALL_KMODS=n" >> .config
+          echo "CONFIG_ALL=n" >> .config
+          echo "CONFIG_AUTOREMOVE=n" >> .config
           echo "CONFIG_SIGNED_PACKAGES=n" >> .config
           make defconfig
           echo "✅ Default configuration generated."
