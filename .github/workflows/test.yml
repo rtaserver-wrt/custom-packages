@@ -406,9 +406,6 @@ jobs:
           echo "::endgroup::"
           
           if [ "$BUILD_SUCCESS" = "true" ]; then
-            echo "::group::📋 Creating package index"
-            make package/index $V_FLAG || echo "⚠️ Failed to create package index"
-            echo "::endgroup::"
             echo "✅ All packages built successfully"
           else
             echo "::warning::Some packages failed to build: $FAILED_PACKAGES"
@@ -419,62 +416,39 @@ jobs:
         if: always()
         run: |
           echo "::group::🗂️ Preparing Artifacts"
-          mkdir -p $GITHUB_WORKSPACE/artifacts/packages/${{ matrix.arch }}
           mkdir -p $GITHUB_WORKSPACE/artifacts/logs
-          
           cd ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          
           echo "✨ Scanning for built packages..."
-          PACKAGE_COUNT=0
-          
-          # Ambil list package utama
           MAIN_PACKAGES="${{ steps.determine_packages.outputs.packages }}"
           echo "Main packages: $MAIN_PACKAGES"
-
-          # Parse dependensi dari file Packages
-          PKG_INDEX="bin/packages/${{ matrix.arch }}/Packages"
+          # Cari file Packages index di seluruh bin/packages
+          PKG_INDEX=$(find bin/packages -type f -name Packages | head -n1)
           FINAL_PKGS=""
           if [ -f "$PKG_INDEX" ]; then
-            # Tambahkan package utama
             for PKG in $MAIN_PACKAGES; do
               FINAL_PKGS="$FINAL_PKGS $PKG"
-              # Cari dependensi langsung
               DEPS=$(awk -v pkg="$PKG" 'BEGIN{RS="";FS="\n"} $0~"^Package: "pkg"$"{for(i=1;i<=NF;i++) if($i~"^Depends:") print $i}' "$PKG_INDEX" | sed 's/Depends: //;s/,/ /g')
               FINAL_PKGS="$FINAL_PKGS $DEPS"
             done
-            # Unikkan list
             FINAL_PKGS=$(echo $FINAL_PKGS | xargs -n1 | sort -u | xargs)
             echo "Final packages to collect (with deps): $FINAL_PKGS"
           else
             echo "⚠️ Packages index not found, will collect all .ipk/.apk"
             FINAL_PKGS="$MAIN_PACKAGES"
           fi
-
-          # Salin hanya .ipk/.apk yang sesuai list
           PKG_PATTERN=$(echo $FINAL_PKGS | sed 's/ /\\|/g')
           PACKAGE_COUNT=0
-          if [ -d "bin/packages/${{ matrix.arch }}" ]; then
-            find bin/packages/${{ matrix.arch }} -type f \( -name "*.ipk" -o -name "*.apk" \) | grep -E "/($PKG_PATTERN)_.*\.(ipk|apk)$" | while read pkg; do
-              cp "$pkg" "$GITHUB_WORKSPACE/artifacts/packages/${{ matrix.arch }}/" 2>/dev/null || true
-              PACKAGE_COUNT=$((PACKAGE_COUNT + 1))
-            done
-            echo "📦 Copied $PACKAGE_COUNT filtered packages"
-          fi
-
+          # Cari semua .ipk/.apk di seluruh bin/packages
+          find bin/packages -type f \( -name "*.ipk" -o -name "*.apk" \) | grep -E "/($PKG_PATTERN)_.*\.(ipk|apk)$" | while read pkg; do
+            cp "$pkg" "$GITHUB_WORKSPACE/resuildpackages/" 2>/dev/null || true
+            PACKAGE_COUNT=$((PACKAGE_COUNT + 1))
+          done
+          echo "📦 Copied $PACKAGE_COUNT filtered packages"
           # Tetap salin index dan log seperti sebelumnya
-          find bin/packages/${{ matrix.arch }} -name "Packages*" -exec cp {} "$GITHUB_WORKSPACE/artifacts/packages/${{ matrix.arch }}/" \; 2>/dev/null || true
+          find bin/packages -name "Packages*" -exec cp {} "$GITHUB_WORKSPACE/resuildpackages/" \; 2>/dev/null || true
           find logs/ -type f -name "*.log" -size -10M -exec cp {} "$GITHUB_WORKSPACE/artifacts/logs/" \; 2>/dev/null || true
-
           echo "✨ Final artifacts structure:"
-          ls -la "$GITHUB_WORKSPACE/artifacts/packages/${{ matrix.arch }}/" || echo "No packages found"
-
-          # Create summary
-          echo "## Build Summary" > "$GITHUB_WORKSPACE/artifacts/build-summary.md"
-          echo "- **Release**: ${{ matrix.release }}" >> "$GITHUB_WORKSPACE/artifacts/build-summary.md"
-          echo "- **Architecture**: ${{ matrix.arch }}" >> "$GITHUB_WORKSPACE/artifacts/build-summary.md"
-          echo "- **Packages Built**: $(find "$GITHUB_WORKSPACE/artifacts/packages/${{ matrix.arch }}" -name "*.ipk" -o -name "*.apk" | wc -l)" >> "$GITHUB_WORKSPACE/artifacts/build-summary.md"
-          echo "- **Build Time**: $(date -u)" >> "$GITHUB_WORKSPACE/artifacts/build-summary.md"
-          
+          ls -la "$GITHUB_WORKSPACE/resuildpackages/" || echo "No packages found"
           echo "::endgroup::"
 
       - name: 🗂️ Move Built Packages (with Deps) to resuildpackages
