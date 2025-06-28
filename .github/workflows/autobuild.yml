@@ -6,9 +6,8 @@ name: AutoCompiler OpenWrt Packages
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - '.github/workflows/**'
-      - 'README.md'
+    paths:
+      - 'feeds/**'
 
   workflow_dispatch:
     inputs:
@@ -318,9 +317,32 @@ jobs:
           echo "content=$combined_packages" >> $GITHUB_OUTPUT
           echo "::endgroup::"
 
+      - name: 📋 Detect Changed Packages
+        if: github.event_name == 'push'
+        id: detect_changed_packages
+        run: |
+          echo "::group::Detecting changed packages in feeds"
+          # Get list of changed Makefile paths in feeds
+          CHANGED_MAKEFILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'feeds/*/*/Makefile')
+          PKGS=""
+          for f in $CHANGED_MAKEFILES; do
+            PKG=$(basename $(dirname "$f"))
+            PKGS="$PKGS $PKG"
+          done
+          # Remove duplicates
+          PKGS=$(echo $PKGS | xargs -n1 | sort -u | xargs)
+          echo "Changed packages: $PKGS"
+          echo "content=$PKGS" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
+
       - name: 📦 Prepare Package List
         run: |
-          PACKAGES_TO_BUILD="${{ steps.discover_packages.outputs.content }} ${{ inputs.compile_pkg }}"
+          # Use changed packages if any, else fallback to all packages if manual trigger
+          if [ -n "${{ steps.detect_changed_packages.outputs.content }}" ]; then
+            PACKAGES_TO_BUILD="${{ steps.detect_changed_packages.outputs.content }}"
+          else
+            PACKAGES_TO_BUILD="${{ steps.discover_packages.outputs.content }} ${{ inputs.compile_pkg }}"
+          fi
           CLEAN_PACKAGES=$(echo $PACKAGES_TO_BUILD | xargs -n1 | sort -u | xargs)
           echo "PACKAGES=$CLEAN_PACKAGES" >> $GITHUB_ENV
           echo "Final package list: $CLEAN_PACKAGES"
