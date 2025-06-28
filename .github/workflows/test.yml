@@ -340,7 +340,7 @@ jobs:
           # Create directory structure
           mkdir -p "releases/${{ matrix.sdk_ver }}/${{ matrix.platform }}/packages"
 
-          ls -R bin/ || true
+          ls -R ./ || true
           
           # Cari semua file .ipk dari feed custom di seluruh bin/
           ipk_found=$(find bin/ -type f -name "*.ipk" -path "*/custom/*" | wc -l)
