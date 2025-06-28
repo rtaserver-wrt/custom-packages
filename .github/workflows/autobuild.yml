@@ -279,13 +279,11 @@ jobs:
             fi
           }
           
-          packages=$(find_packages "$GITHUB_WORKSPACE/feeds/packages")
-          luci_packages=$(find_packages "$GITHUB_WORKSPACE/feeds/luci")
+          packages=$(find_packages "$GITHUB_WORKSPACE/feeds")
           
           echo "📦 Found packages: ${packages:-None}"
-          echo "🎨 Found LuCI packages: ${luci_packages:-None}"
           
-          combined_packages=$(echo "$packages $luci_packages" | xargs -n1 | sort -u | xargs)
+          combined_packages=$(echo "$packages | xargs -n1 | sort -u | xargs)
           echo "✨ Combined unique packages: $combined_packages"
           echo "::endgroup::"
           echo "content=$combined_packages" >> $GITHUB_OUTPUT
