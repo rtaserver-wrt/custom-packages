@@ -1,0 +1,37 @@
+# Unique OpenWrt Architecture Packages
+# Each architecture appears only once
+
+aarch64_cortex-a53
+aarch64_cortex-a72
+aarch64_cortex-a76
+aarch64_generic
+arm_arm1176jzf-s_vfp
+arm_arm926ej-s
+arm_cortex-a15_neon-vfpv4
+arm_cortex-a5_vfpv4
+arm_cortex-a7
+arm_cortex-a7_neon-vfpv4
+arm_cortex-a7_vfpv4
+arm_cortex-a8_vfpv3
+arm_cortex-a9
+arm_cortex-a9_neon
+arm_cortex-a9_vfpv3-d16
+armeb_xscale
+arm_fa526
+arm_xscale
+i386_pentium4
+i386_pentium-mmx
+loongarch64_generic
+mips_24kc
+mips_4kec
+mips64_octeonplus
+mipsel_24kc
+mipsel_24kc_24kf
+mipsel_74kc
+mipsel_mips32
+mips_mips32
+powerpc_464fp
+powerpc64_e5500
+powerpc_8548
+riscv64_riscv64
+x86_64

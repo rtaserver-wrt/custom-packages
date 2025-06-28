@@ -1,0 +1,150 @@
+# OpenWrt Architecture Usage Summary
+# Shows which targets use each architecture package
+
+Architecture: aarch64_cortex-a53
+  'bcm27xx/bcm2710'         aarch64_cortex-a53
+  'bcm4908/generic'         aarch64_cortex-a53
+  'imx/cortexa53'           aarch64_cortex-a53
+  'mediatek/filogic'        aarch64_cortex-a53
+  'mediatek/mt7622'         aarch64_cortex-a53
+  'mvebu/cortexa53'         aarch64_cortex-a53
+  'sunxi/cortexa53'         aarch64_cortex-a53
+
+Architecture: aarch64_cortex-a72
+  'bcm27xx/bcm2711'         aarch64_cortex-a72
+  'mvebu/cortexa72'         aarch64_cortex-a72
+
+Architecture: aarch64_cortex-a76
+  'bcm27xx/bcm2712'         aarch64_cortex-a76
+
+Architecture: aarch64_generic
+  'armsr/armv8'             aarch64_generic
+  'layerscape/armv8_64b'    aarch64_generic
+  'rockchip/armv8'          aarch64_generic
+
+Architecture: arm_arm1176jzf-s_vfp
+  'bcm27xx/bcm2708'         arm_arm1176jzf-s_vfp
+
+Architecture: arm_arm926ej-s
+  'at91/sam9x'              arm_arm926ej-s
+  'mxs/generic'             arm_arm926ej-s
+
+Architecture: arm_cortex-a15_neon-vfpv4
+  'armsr/armv7'             arm_cortex-a15_neon-vfpv4
+  'ipq806x/chromium'        arm_cortex-a15_neon-vfpv4
+  'ipq806x/generic'         arm_cortex-a15_neon-vfpv4
+
+Architecture: arm_cortex-a5_vfpv4
+  'at91/sama5'              arm_cortex-a5_vfpv4
+
+Architecture: arm_cortex-a7
+  'mediatek/mt7629'         arm_cortex-a7
+
+Architecture: arm_cortex-a7_neon-vfpv4
+  'bcm27xx/bcm2709'         arm_cortex-a7_neon-vfpv4
+  'imx/cortexa7'            arm_cortex-a7_neon-vfpv4
+  'ipq40xx/chromium'        arm_cortex-a7_neon-vfpv4
+  'ipq40xx/mikrotik'        arm_cortex-a7_neon-vfpv4
+  'layerscape/armv7'        arm_cortex-a7_neon-vfpv4
+  'mediatek/mt7623'         arm_cortex-a7_neon-vfpv4
+  'stm32/stm32mp1'          arm_cortex-a7_neon-vfpv4
+  'sunxi/cortexa7'          arm_cortex-a7_neon-vfpv4
+
+Architecture: arm_cortex-a7_vfpv4
+  'at91/sama7'              arm_cortex-a7_vfpv4
+
+Architecture: arm_cortex-a8_vfpv3
+  'omap/generic'            arm_cortex-a8_vfpv3
+  'sunxi/cortexa8'          arm_cortex-a8_vfpv3
+
+Architecture: arm_cortex-a9
+  'bcm53xx/generic'         arm_cortex-a9
+
+Architecture: arm_cortex-a9_neon
+  'imx/cortexa9'            arm_cortex-a9_neon
+  'zynq/generic'            arm_cortex-a9_neon
+
+Architecture: arm_cortex-a9_vfpv3-d16
+  'mvebu/cortexa9'          arm_cortex-a9_vfpv3-d16
+  'tegra/generic'           arm_cortex-a9_vfpv3-d16
+
+Architecture: armeb_xscale
+  'ixp4xx/generic'          armeb_xscale
+
+Architecture: arm_fa526
+  'gemini/generic'          arm_fa526
+
+Architecture: arm_xscale
+  'kirkwood/generic'        arm_xscale
+
+Architecture: i386_pentium4
+  'x86/generic'             i386_pentium4
+
+Architecture: i386_pentium-mmx
+  'x86/geode'               i386_pentium-mmx
+  'x86/legacy'              i386_pentium-mmx
+
+Architecture: loongarch64_generic
+  'loongarch64/generic'     loongarch64_generic
+
+Architecture: mips_24kc
+  'ath79/generic'           mips_24kc
+  'ath79/mikrotik'          mips_24kc
+  'ath79/nand'              mips_24kc
+  'ath79/tiny'              mips_24kc
+  'lantiq/xrx200'           mips_24kc
+  'lantiq/xrx200_legacy'    mips_24kc
+  'lantiq/xway'             mips_24kc
+  'realtek/rtl839x'         mips_24kc
+  'realtek/rtl930x'         mips_24kc
+
+Architecture: mips_4kec
+  'realtek/rtl838x'         mips_4kec
+
+Architecture: mips64_octeonplus
+  'octeon/generic'          mips64_octeonplus
+
+Architecture: mipsel_24kc
+  'ramips/mt7620'           mipsel_24kc
+  'ramips/mt7621'           mipsel_24kc
+  'ramips/mt76x8'           mipsel_24kc
+  'ramips/rt305x'           mipsel_24kc
+
+Architecture: mipsel_24kc_24kf
+  'pistachio/generic'       mipsel_24kc_24kf
+
+Architecture: mipsel_74kc
+  'bcm47xx/mips74k'         mipsel_74kc
+  'ramips/rt3883'           mipsel_74kc
+
+Architecture: mipsel_mips32
+  'bcm47xx/generic'         mipsel_mips32
+  'bcm47xx/legacy'          mipsel_mips32
+
+Architecture: mips_mips32
+  'bmips/bcm6318'           mips_mips32
+  'bmips/bcm63268'          mips_mips32
+  'bmips/bcm6328'           mips_mips32
+  'bmips/bcm6358'           mips_mips32
+  'bmips/bcm6362'           mips_mips32
+  'bmips/bcm6368'           mips_mips32
+
+Architecture: powerpc_464fp
+  'apm821xx/nand'           powerpc_464fp
+  'apm821xx/sata'           powerpc_464fp
+
+Architecture: powerpc64_e5500
+  'qoriq/generic'           powerpc64_e5500
+
+Architecture: powerpc_8548
+  'mpc85xx/p1010'           powerpc_8548
+  'mpc85xx/p1020'           powerpc_8548
+  'mpc85xx/p2020'           powerpc_8548
+
+Architecture: riscv64_riscv64
+  'd1/generic'              riscv64_riscv64
+  'sifiveu/generic'         riscv64_riscv64
+
+Architecture: x86_64
+  'x86/64'                  x86_64
+
