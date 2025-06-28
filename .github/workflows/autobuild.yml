@@ -315,16 +315,16 @@ jobs:
           
           echo "Configuring feeds..."
           if [ "${{ matrix.release }}" == "SNAPSHOT" ]; then
-            sdk_ver="master"
+            sdk_ver="main"
           else
-            sdk_ver="${{ matrix.release }}"
+            sdk_ver="openwrt-${{ matrix.release }}"
           fi
 
           cat > feeds.conf << EOF
-          src-git base https://github.com/openwrt/openwrt.git;openwrt-$sdk_ver
-          src-git packages https://github.com/openwrt/packages.git;openwrt-$sdk_ver
-          src-git luci https://github.com/openwrt/luci.git;openwrt-$sdk_ver
-          src-git routing https://git.openwrt.org/feed/routing.git;openwrt-$sdk_ver
+          src-git base https://github.com/openwrt/openwrt.git;$sdk_ver
+          src-git packages https://github.com/openwrt/packages.git;$sdk_ver
+          src-git luci https://github.com/openwrt/luci.git;$sdk_ver
+          src-git routing https://git.openwrt.org/feed/routing.git;$sdk_ver
           src-link $FEEDNAME $GITHUB_WORKSPACE/feeds
           EOF
 
