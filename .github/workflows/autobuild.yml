@@ -55,7 +55,7 @@ on:
       ignore_errors:
         description: 'Continue building even if some packages fail'
         required: false
-        default: false
+        default: true
         type: boolean
       enable_index:
         description: 'Create package index'
@@ -65,7 +65,7 @@ on:
       no_refresh_check:
         description: 'Skip patch refresh check'
         required: false
-        default: false
+        default: true
         type: boolean
 
 permissions:
