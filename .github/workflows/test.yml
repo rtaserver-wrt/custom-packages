@@ -316,6 +316,21 @@ jobs:
 
           echo "status=success" >> $GITHUB_OUTPUT
 
+      - name: Clean ${{ matrix.platform }} custom package
+        run: |
+          cd sdk
+          # Clean all custom packages before compile to force rebuild and .ipk generation
+          if [ "${{ inputs.compile_pkg }}" != '' ]; then
+            packages="${{ inputs.compile_pkg }}"
+          else
+            packages="${{ steps.list_package.outputs.content }}"
+          fi
+          for package in $packages; do
+            if [ -d "feeds/custom/$package" ]; then
+              make package/feeds/custom/$package/clean || true
+            fi
+          done
+
       - name: Organize ${{ matrix.platform }} files
         id: organize
         if: steps.compile.outputs.status == 'success'
