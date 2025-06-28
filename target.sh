@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # OpenWrt target architecture discovery script
 # This script fetches all available targets and their architecture packages
@@ -104,14 +104,47 @@ print_unique_architectures() {
     echo "# OpenWrt Architecture Usage Summary" > targets_summary.txt
     echo "# Shows which targets use each architecture package" >> targets_summary.txt
     echo "" >> targets_summary.txt
-    
-    # Group targets by architecture
+
+    # Group targets by architecture (for TXT)
     for arch in $(sort "$arch_file" | uniq); do
         echo "Architecture: $arch" >> targets_summary.txt
         grep " $arch$" "$temp_file" | sed 's/^/  /' >> targets_summary.txt
         echo "" >> targets_summary.txt
     done
-    
+
+    # Create JSON summary file
+    echo "{" > targets_summary.json
+    first=1
+    for arch in $(sort "$arch_file" | uniq); do
+        if [ $first -eq 0 ]; then
+            echo "," >> targets_summary.json
+        fi
+        first=0
+        # Get all targets for this arch as a JSON array
+        targets=$(grep " $arch$" "$temp_file" | awk '{print $1}' | sed "s/'//g" | jq -R . | jq -s .)
+        echo "  \"$arch\": $targets" >> targets_summary.json
+    done
+    echo "}" >> targets_summary.json
+
+    # Create arch_openwrt.json: list of {arch, target} (unique arch only)
+    echo "[" > arch_openwrt.json
+    first=1
+    # Gunakan associative array untuk filter arch unik
+    declare -A arch_seen
+    while read -r line; do
+        target=$(echo "$line" | awk '{print $1}' | sed "s/'//g")
+        arch=$(echo "$line" | awk '{print $2}')
+        if [ -z "${arch_seen[$arch]}" ]; then
+            arch_seen[$arch]=1
+            if [ $first -eq 0 ]; then
+                echo "," >> arch_openwrt.json
+            fi
+            first=0
+            echo "  {\"arch\": \"$arch\", \"target\": \"$target\"}" >> arch_openwrt.json
+        fi
+    done < "$temp_file"
+    echo "]" >> arch_openwrt.json
+
     # Clean up temporary files
     rm "$temp_file" "$arch_file"
     

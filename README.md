@@ -88,6 +88,74 @@ Kontribusi sangat terbuka! Anda bisa:
 
 ---
 
+### 🧑‍💻 Cara Fork & Build Sendiri
+
+1. **Fork repository ini ke akun GitHub Anda.**
+2. **Clone hasil fork ke komputer Anda:**
+   ```bash
+   git clone https://github.com/<username-anda>/custom-packages.git
+   cd custom-packages
+   ```
+3. **(Opsional) Buat branch baru untuk perubahan Anda:**
+   ```bash
+   git checkout -b fitur-anda
+   ```
+4. **Edit, tambahkan, atau update package di folder `feeds/` sesuai kebutuhan.**
+5. **Push perubahan ke repository fork Anda:**
+   ```bash
+   git add .
+   git commit -m "Deskripsi perubahan"
+   git push origin fitur-anda
+   ```
+6. **Buat Pull Request ke repository utama jika ingin kontribusi.**
+
+---
+
+### 🚦 Build Otomatis via GitHub Actions
+
+- Setiap push ke branch `main` akan otomatis memicu build & publish package ke GitHub Pages.
+- Anda bisa menjalankan build manual via tab "Actions" di GitHub, klik workflow `AutoCompiler OpenWrt Packages` lalu pilih `Run workflow`.
+- Untuk build dengan package signing, pastikan folder `keys/` sudah berisi file kunci yang sesuai (`usign`, `gpg`, atau `apksign`).
+
+---
+
+### 🗝️ Penandatanganan Paket (Package Signing)
+
+- Jika ingin paket hasil build ditandatangani, letakkan file kunci di folder `keys/`:
+  - `keys/usign/*.pub` dan `*.sec` untuk usign
+  - `keys/gpg/*.pub` dan `*.sec` untuk gpg
+  - `keys/apksign/*.pub` dan `*.sec` untuk apksign
+- Aktifkan opsi `signed_packages` pada workflow dispatch di GitHub Actions.
+
+---
+
+### 🔑 Menggunakan Kunci Sendiri (Custom Keys)
+
+Jika Anda ingin menggunakan kunci/signature sendiri:
+
+1. **Hapus folder `keys` lama:**
+   ```bash
+   rm -rf keys
+   ```
+2. **Jalankan script keygen:**
+   ```bash
+   ./generate_keys.sh
+   ```
+3. **Kunci baru akan otomatis dibuat di folder `keys/` dan siap digunakan untuk signing package.**
+
+---
+
+### 🔄 Sinkronisasi Fork
+
+Agar fork Anda selalu up-to-date dengan repo utama:
+```bash
+git remote add upstream https://github.com/rtaserver-wrt/custom-packages.git
+git fetch upstream
+git merge upstream/main
+```
+
+---
+
 ## 📜 Lisensi
 Proyek ini berlisensi [MIT](LICENSE). Silakan gunakan, modifikasi, dan distribusikan sesuai kebutuhan.
 

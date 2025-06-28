@@ -1,0 +1,65 @@
+[
+  {"arch": "arm_cortex-a15_neon-vfpv4", "target": "armsr/armv7"}
+,
+  {"arch": "aarch64_generic", "target": "armsr/armv8"}
+,
+  {"arch": "arm_arm926ej-s", "target": "at91/sam9x"}
+,
+  {"arch": "arm_cortex-a5_vfpv4", "target": "at91/sama5"}
+,
+  {"arch": "arm_cortex-a7_vfpv4", "target": "at91/sama7"}
+,
+  {"arch": "mips_24kc", "target": "ath79/generic"}
+,
+  {"arch": "arm_arm1176jzf-s_vfp", "target": "bcm27xx/bcm2708"}
+,
+  {"arch": "arm_cortex-a7_neon-vfpv4", "target": "bcm27xx/bcm2709"}
+,
+  {"arch": "aarch64_cortex-a53", "target": "bcm27xx/bcm2710"}
+,
+  {"arch": "aarch64_cortex-a72", "target": "bcm27xx/bcm2711"}
+,
+  {"arch": "aarch64_cortex-a76", "target": "bcm27xx/bcm2712"}
+,
+  {"arch": "mipsel_mips32", "target": "bcm47xx/generic"}
+,
+  {"arch": "mipsel_74kc", "target": "bcm47xx/mips74k"}
+,
+  {"arch": "arm_cortex-a9", "target": "bcm53xx/generic"}
+,
+  {"arch": "riscv64_riscv64", "target": "d1/generic"}
+,
+  {"arch": "arm_fa526", "target": "gemini/generic"}
+,
+  {"arch": "arm_cortex-a9_neon", "target": "imx/cortexa9"}
+,
+  {"arch": "armeb_xscale", "target": "ixp4xx/generic"}
+,
+  {"arch": "arm_xscale", "target": "kirkwood/generic"}
+,
+  {"arch": "loongarch64_generic", "target": "loongarch64/generic"}
+,
+  {"arch": "arm_cortex-a7", "target": "mediatek/mt7629"}
+,
+  {"arch": "powerpc_8548", "target": "mpc85xx/p1010"}
+,
+  {"arch": "arm_cortex-a9_vfpv3-d16", "target": "mvebu/cortexa9"}
+,
+  {"arch": "mips64_octeonplus", "target": "octeon/generic"}
+,
+  {"arch": "arm_cortex-a8_vfpv3", "target": "omap/generic"}
+,
+  {"arch": "mipsel_24kc_24kf", "target": "pistachio/generic"}
+,
+  {"arch": "powerpc64_e5500", "target": "qoriq/generic"}
+,
+  {"arch": "mipsel_24kc", "target": "ramips/mt7620"}
+,
+  {"arch": "mips_4kec", "target": "realtek/rtl838x"}
+,
+  {"arch": "x86_64", "target": "x86/64"}
+,
+  {"arch": "i386_pentium4", "target": "x86/generic"}
+,
+  {"arch": "i386_pentium-mmx", "target": "x86/geode"}
+]

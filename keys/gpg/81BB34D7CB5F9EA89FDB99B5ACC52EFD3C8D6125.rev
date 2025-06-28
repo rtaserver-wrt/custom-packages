@@ -1,0 +1,37 @@
+This is a revocation certificate for the OpenPGP key:
+
+pub   rsa4096 2025-06-28 [SCEAR]
+      81BB34D7CB5F9EA89FDB99B5ACC52EFD3C8D6125
+uid          rtaserver wrt <rtaserver-wrt@users.noreply.github.com>
+
+A revocation certificate is a kind of "kill switch" to publicly
+declare that a key shall not anymore be used.  It is not possible
+to retract such a revocation certificate once it has been published.
+
+Use it to revoke this key in case of a compromise or loss of
+the secret key.  However, if the secret key is still accessible,
+it is better to generate a new revocation certificate and give
+a reason for the revocation.  For details see the description of
+of the gpg command "--generate-revocation" in the GnuPG manual.
+
+To avoid an accidental use of this file, a colon has been inserted
+before the 5 dashes below.  Remove this colon with a text editor
+before importing and publishing this revocation certificate.
+
+:-----BEGIN PGP PUBLIC KEY BLOCK-----
+Comment: This is a revocation certificate
+
+iQI2BCABCgAgFiEEgbs018tfnqif25m1rMUu/TyNYSUFAmhfyg4CHQAACgkQrMUu
+/TyNYSW1jBAA0o+sS+I11ltSzQztNRf53rhqrQuT6WOeuNFHiTODml+NgLn8MkJN
+FgAJGhCZSvMpeDOtbxqi6DH29vnApGRVThhhfxV+Cn46Jed/9fRFcfDCxW9H9GYt
+B7EAw+wfI80LDh5VWYA3oALm+5czOB2kwn4+kh1OpWJ1ISYsmvxy8xNEraYnVPAw
+vRNM/95hXOxs7t62Tl4ORcuzt7DSe73lNFKnELTPPPtyhCbmRAthmP6h8WAs60Wc
+1o7Bqzfy3GvFCUo8KpV7bp0Q+YL31jn/E2GmWlBu2+agErPlP1WLNTK+xXkD9RIn
+g5rtNRrZ7B9U7tNAxtTXWDohs8xhv/D4V2PI/W2DYeVvTTORR1+xb5Jwy36szxtX
+ja6D74TS+0FyTnB0BIQWjO0KvQEEzPkJCVj/J+ZOtMCe0rCtxi+GNrcw8La6JcgO
+bMjRetcFv2h7wi9kXCHek/fR7+HrU4YD+toIo/GMpZpT2B7iRUpaWyVzXjwLrgtV
+OO+0QHD7HhfLUjDT7q2KWLqFAd6IzTSoki4SAlpITUTO4M59OTqf+6c6i2ZBPN2N
+a6o5bMO7p1xemyl58jskWuNvaYOFLR721cz0alXRu9394HjKUlO+fX8/nLnRRnvt
+I+hc8JRLgrBu66k8v65udp3dSk4Nrg6mgCrqZQ0JJ3O0VT+2Wgj4Zgk=
+=NQsA
+-----END PGP PUBLIC KEY BLOCK-----

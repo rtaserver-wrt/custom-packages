@@ -1,8 +1,6 @@
 # Complete OpenWrt Target -> Architecture Mapping
 # Format: 'target/subtarget' architecture_package
 
-'apm821xx/nand'           powerpc_464fp
-'apm821xx/sata'           powerpc_464fp
 'armsr/armv7'             arm_cortex-a15_neon-vfpv4
 'armsr/armv8'             aarch64_generic
 'at91/sam9x'              arm_arm926ej-s
@@ -11,7 +9,6 @@
 'ath79/generic'           mips_24kc
 'ath79/mikrotik'          mips_24kc
 'ath79/nand'              mips_24kc
-'ath79/tiny'              mips_24kc
 'bcm27xx/bcm2708'         arm_arm1176jzf-s_vfp
 'bcm27xx/bcm2709'         arm_cortex-a7_neon-vfpv4
 'bcm27xx/bcm2710'         aarch64_cortex-a53
@@ -20,20 +17,13 @@
 'bcm47xx/generic'         mipsel_mips32
 'bcm47xx/legacy'          mipsel_mips32
 'bcm47xx/mips74k'         mipsel_74kc
-'bcm4908/generic'         aarch64_cortex-a53
 'bcm53xx/generic'         arm_cortex-a9
-'bmips/bcm6318'           mips_mips32
-'bmips/bcm63268'          mips_mips32
-'bmips/bcm6328'           mips_mips32
-'bmips/bcm6358'           mips_mips32
-'bmips/bcm6362'           mips_mips32
-'bmips/bcm6368'           mips_mips32
 'd1/generic'              riscv64_riscv64
 'gemini/generic'          arm_fa526
 'imx/cortexa53'           aarch64_cortex-a53
 'imx/cortexa7'            arm_cortex-a7_neon-vfpv4
 'imx/cortexa9'            arm_cortex-a9_neon
-'ipq40xx/chromium'        arm_cortex-a7_neon-vfpv4
+'ipq40xx/generic'         arm_cortex-a7_neon-vfpv4
 'ipq40xx/mikrotik'        arm_cortex-a7_neon-vfpv4
 'ipq806x/chromium'        arm_cortex-a15_neon-vfpv4
 'ipq806x/generic'         arm_cortex-a15_neon-vfpv4
@@ -61,7 +51,6 @@
 'pistachio/generic'       mipsel_24kc_24kf
 'qoriq/generic'           powerpc64_e5500
 'ramips/mt7620'           mipsel_24kc
-'ramips/mt7621'           mipsel_24kc
 'ramips/mt76x8'           mipsel_24kc
 'ramips/rt305x'           mipsel_24kc
 'ramips/rt3883'           mipsel_74kc
@@ -70,6 +59,7 @@
 'realtek/rtl930x'         mips_24kc
 'rockchip/armv8'          aarch64_generic
 'sifiveu/generic'         riscv64_riscv64
+'starfive/generic'        riscv64_riscv64
 'stm32/stm32mp1'          arm_cortex-a7_neon-vfpv4
 'sunxi/cortexa53'         aarch64_cortex-a53
 'sunxi/cortexa7'          arm_cortex-a7_neon-vfpv4

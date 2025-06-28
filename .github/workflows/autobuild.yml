@@ -255,12 +255,36 @@ jobs:
       - name: 🔑 Setup Package Signing Key
         if: inputs.signed_packages
         run: |
-          if [ -n "${{ secrets.OPENWRT_SIGNING_KEY }}" ]; then
-            echo "${{ secrets.OPENWRT_SIGNING_KEY }}" > $SDK_PATH/key-build
-            echo "CONFIG_SIGNED_PACKAGES=y" >> $GITHUB_ENV
-            echo "✅ Package signing key configured"
-          else
-            echo "::warning::No signing key provided, packages will not be signed"
+          KEY_DIR="$GITHUB_WORKSPACE/keys"
+          if [ -d "$KEY_DIR/usign" ]; then
+            # Usign: copy .pub and .sec as key-build.pub and key-build.sec
+            if [ -f "$KEY_DIR/usign"/*.pub ] && [ -f "$KEY_DIR/usign"/*.sec ]; then
+              cp "$KEY_DIR/usign"/*.pub "$SDK_PATH/key-build.pub"
+              cp "$KEY_DIR/usign"/*.sec "$SDK_PATH/key-build.sec"
+              echo "CONFIG_SIGNED_PACKAGES=y" >> $GITHUB_ENV
+              echo "✅ Usign keys copied to SDK for package signing."
+            fi
+          fi
+          if [ -d "$KEY_DIR/gpg" ]; then
+            # GPG: copy .pub and .sec as key-build.gpg.pub and key-build.gpg.sec (if needed by your build system)
+            if [ -f "$KEY_DIR/gpg"/*.pub ] && [ -f "$KEY_DIR/gpg"/*.sec ]; then
+              cp "$KEY_DIR/gpg"/*.pub "$SDK_PATH/key-build.gpg.pub"
+              cp "$KEY_DIR/gpg"/*.sec "$SDK_PATH/key-build.gpg.sec"
+              echo "CONFIG_SIGNED_PACKAGES=y" >> $GITHUB_ENV
+              echo "✅ GPG keys copied to SDK for package signing."
+            fi
+          fi
+          if [ -d "$KEY_DIR/apksign" ]; then
+            # APK sign: copy .pub and .sec as key-build.apk.pub and key-build.apk.sec (if needed)
+            if [ -f "$KEY_DIR/apksign"/*.pub ] && [ -f "$KEY_DIR/apksign"/*.sec ]; then
+              cp "$KEY_DIR/apksign"/*.pub "$SDK_PATH/key-build.apk.pub"
+              cp "$KEY_DIR/apksign"/*.sec "$SDK_PATH/key-build.apk.sec"
+              echo "CONFIG_SIGNED_PACKAGES=y" >> $GITHUB_ENV
+              echo "✅ APK sign keys copied to SDK for package signing."
+            fi
+          fi
+          if ! ls $SDK_PATH/key-build* 1> /dev/null 2>&1; then
+            echo "::warning::No signing keys found in $KEY_DIR. Packages will not be signed."
           fi
 
       - name: 📋 Read Package List from Feeds
@@ -272,9 +296,7 @@ jobs:
             local feed_dir="$1"
             if [ -d "$feed_dir" ]; then
               find -L "$feed_dir" -mindepth 1 -maxdepth 3 -type f -name "Makefile" -exec dirname {} \; | while read dir; do
-                if grep -q "include.*package.mk\|include.*kernel.mk" "$dir/Makefile" 2>/dev/null; then
-                  basename "$dir"
-                fi
+                basename "$dir"
               done | sort -u | tr '\n' ' '
             fi
           }
@@ -525,7 +547,7 @@ jobs:
           
           if [ -d /tmp/artifacts/bin ]; then
             echo "✨ Bin Directory Structure:"
-            find /tmp/artifacts/bin -type f -name "*.ipk" -o -name "*.apk" 2>/dev/null | head -20 || true
+            find /tmp/artifacts/bin/packages/${{ matrix.arch }} -type f -name "*.ipk" -o -name "*.apk" 2>/dev/null || true
             
             echo "Copying built packages..."
             if [ -d "/tmp/artifacts/bin/packages/${{ matrix.arch }}/${{ env.FEEDNAME }}" ]; then
@@ -544,7 +566,7 @@ jobs:
           fi
           
           echo "✨ Final artifacts structure:"
-          find $GITHUB_WORKSPACE/artifacts -type f 2>/dev/null | head -20 || true
+          find $GITHUB_WORKSPACE/artifacts -type f 2>/dev/null || true
           echo "::endgroup::"
 
       - name: 📤 Upload Packages Artifact
