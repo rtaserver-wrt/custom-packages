@@ -143,14 +143,14 @@ jobs:
           echo "SDK Cache Directory: $SDK_CACHE_DIR"
           echo "::endgroup::"
       
-      - name: 📦 Cache OpenWrt SDK
+      - name: 📦 Cache OpenWrt SDK Archive
         id: cache-sdk
         uses: actions/cache@v4
         with:
-          path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          key: sdk-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3-${{ hashFiles('.github/workflows/autobuild.yml') }}
+          path: ${{ env.SDK_CACHE_DIR }}/sdk.*
+          key: sdk-archive-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3-${{ hashFiles('.github/workflows/autobuild.yml') }}
           restore-keys: |
-            sdk-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3-
+            sdk-archive-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3-
 
       - name: 📥 Download and Setup OpenWrt SDK
         if: steps.cache-sdk.outputs.cache-hit != 'true'
@@ -212,10 +212,10 @@ jobs:
           echo "::endgroup::"
           
           echo "::group::📥 Downloading SDK"
+          # Download SDK archive only if not cached
           if ! wget -q --timeout=30 --tries=3 "$SDK_URL" -O "$SDK_CACHE_DIR/sdk.${FILE_EXT}"; then
             echo "❌ Failed to download SDK from primary URL"
             echo "Trying alternative download location..."
-            # Try alternative locations if main fails
             ALT_URL="https://archive.openwrt.org/${URL_PATH}/${TARGET}/${SDK_NAME}.${FILE_EXT}"
             if ! wget -q --timeout=30 --tries=3 "$ALT_URL" -O "$SDK_CACHE_DIR/sdk.${FILE_EXT}"; then
               echo "❌ Failed to download SDK from all locations"
