@@ -297,28 +297,33 @@ jobs:
           echo "Final package list: $CLEAN_PACKAGES"
           echo "::endgroup::"
 
-      # - name: 📦 Cache OpenWrt dl Directory
-      #   id: cache-dl
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk/dl
-      #     key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3
+      - name: 📦 Cache OpenWrt dl Directory
+        id: cache-dl
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk/dl
+          key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3
 
       - name: 🛠️ Setup SDK Feeds and Configuration
         run: |
           cd $SDK_PATH
           echo "::group::📜 Configuring Feeds"
           
-          # Backup original feeds.conf if it exists
-          if [ -f feeds.conf ]; then
-            cp feeds.conf feeds.conf.backup
-          elif [ -f feeds.conf.default ]; then
-            cp feeds.conf.default feeds.conf
+          echo "Configuring feeds..."
+          if [ "${{ matrix.release }}" == "SNAPSHOT" ]; then
+            sdk_ver="master"
+          else
+            sdk_ver="${{ matrix.release }}"
           fi
-          
-          # Add custom feed
+
+          cat > feeds.conf << EOF
+          src-git base https://github.com/openwrt/openwrt.git;openwrt-$sdk_ver
+          src-git packages https://github.com/openwrt/packages.git;openwrt-$sdk_ver
+          src-git luci https://github.com/openwrt/luci.git;openwrt-$sdk_ver
+          src-git routing https://git.openwrt.org/feed/routing.git;openwrt-$sdk_ver
           echo "src-link $FEEDNAME $GITHUB_WORKSPACE/feeds" >> feeds.conf
-          
+          EOF
+
           echo "Feeds configuration:"
           cat feeds.conf
           echo "::endgroup::"
