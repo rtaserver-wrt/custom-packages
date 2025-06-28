@@ -148,7 +148,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          key: sdk-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v2
+          key: sdk-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3
 
       - name: 📥 Download and Setup OpenWrt SDK
         if: steps.cache-sdk.outputs.cache-hit != 'true'
@@ -302,7 +302,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk/dl
-          key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v2
+          key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3
 
       - name: 🛠️ Setup SDK Feeds and Configuration
         run: |
