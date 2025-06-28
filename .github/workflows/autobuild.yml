@@ -297,12 +297,12 @@ jobs:
           echo "Final package list: $CLEAN_PACKAGES"
           echo "::endgroup::"
 
-      - name: 📦 Cache OpenWrt dl Directory
-        id: cache-dl
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk/dl
-          key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3
+      # - name: 📦 Cache OpenWrt dl Directory
+      #   id: cache-dl
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk/dl
+      #     key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v3
 
       - name: 🛠️ Setup SDK Feeds and Configuration
         run: |
