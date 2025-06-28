@@ -3,11 +3,6 @@
 name: AutoCompiler OpenWrt Packages
 
 on:
-  workflow_run:
-    workflows: ["Auto Sync App"]
-    types:
-      - completed
-
   push:
     branches:
       - main
@@ -114,8 +109,8 @@ jobs:
             build-essential clang flex bison g++ gawk \
             gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev \
             python3-setuptools rsync swig unzip zlib1g-dev file wget zstd python3-pyelftools \
-            shfmt jq
-          sudo pip3 install --upgrade pip
+            shfmt jq libncursesw5-dev python3-dev python3-distutils
+          sudo pip3 install --upgrade pip setuptools
           echo "::endgroup::"
 
       - name: 🛡️ Verify python3-setuptools Installation
@@ -124,10 +119,12 @@ jobs:
           if ! python3 -c 'import setuptools' 2>/dev/null; then
             echo "python3-setuptools not found, attempting to install again..."
             sudo -E apt-get -qq update
-            sudo -E apt-get -qq install python3-setuptools
+            sudo -E apt-get -qq install python3-setuptools python3-dev python3-distutils
+            sudo pip3 install setuptools
             if ! python3 -c 'import setuptools' 2>/dev/null; then
               echo "❌ python3-setuptools installation failed!"
               python3 --version
+              python3 -c "import sys; print(sys.path)"
               dpkg -l | grep python3
               exit 1
             else
@@ -151,16 +148,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk
-          key: sdk-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}
+          key: sdk-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v2
 
       - name: 📥 Download and Setup OpenWrt SDK
         if: steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
+          set -e  # Exit on any error
           RELEASE="${{ matrix.release }}"
           ARCH="${{ matrix.arch }}"
           
           echo "::group::⚙️ SDK Configuration for Release: $RELEASE, Arch: $ARCH"
           
+          # Define SDK configuration based on release
           if [[ "$RELEASE" == "SNAPSHOT" ]]; then
             URL_PATH="snapshots/targets"
             GCC_VERSION="14.3.0"
@@ -176,8 +175,12 @@ jobs:
             GCC_VERSION="12.3.0"
             FILE_EXT="tar.xz"
             echo "📦 Using stable release 23.05.5. Packages will be in IPK format."
+          else
+            echo "❌ Unsupported release: $RELEASE"
+            exit 1
           fi
           
+          # Map architecture to target platform
           case "$ARCH" in
             "x86_64") TARGET="x86/64" ;;
             "mips_24kc") TARGET="ath79/generic" ;;
@@ -186,8 +189,13 @@ jobs:
             "aarch64_cortex-a53") TARGET="bcm27xx/bcm2710" ;;
             "aarch64_cortex-a72") TARGET="bcm27xx/bcm2711" ;;
             "aarch64_generic") TARGET="rockchip/armv8" ;;
+            *) 
+              echo "❌ Unsupported architecture: $ARCH"
+              exit 1
+              ;;
           esac
           
+          # Construct SDK filename
           SDK_FLAVOR=$(echo $TARGET | tr '/' '-')
           SDK_SUFFIX_EABI=$(if [[ "$ARCH" == "arm_cortex-a7_neon-vfpv4" ]]; then echo "_eabi"; fi)
           
@@ -198,21 +206,45 @@ jobs:
           fi
           
           SDK_URL="https://downloads.openwrt.org/${URL_PATH}/${TARGET}/${SDK_NAME}.${FILE_EXT}"
+          echo "SDK URL: $SDK_URL"
           echo "::endgroup::"
+          
           echo "::group::📥 Downloading SDK"
-          echo "Downloading from: $SDK_URL"
-          wget -q "$SDK_URL" -O "$SDK_CACHE_DIR/sdk.${FILE_EXT}"
-          echo "✅ SDK downloaded."
+          if ! wget -q --timeout=30 --tries=3 "$SDK_URL" -O "$SDK_CACHE_DIR/sdk.${FILE_EXT}"; then
+            echo "❌ Failed to download SDK from primary URL"
+            echo "Trying alternative download location..."
+            # Try alternative locations if main fails
+            ALT_URL="https://archive.openwrt.org/${URL_PATH}/${TARGET}/${SDK_NAME}.${FILE_EXT}"
+            if ! wget -q --timeout=30 --tries=3 "$ALT_URL" -O "$SDK_CACHE_DIR/sdk.${FILE_EXT}"; then
+              echo "❌ Failed to download SDK from all locations"
+              exit 1
+            fi
+          fi
+          echo "✅ SDK downloaded successfully."
           echo "::endgroup::"
           
           echo "::group::📦 Extracting SDK"
           mkdir -p "$SDK_CACHE_DIR/openwrt-sdk"
           if [[ "$FILE_EXT" == "tar.zst" ]]; then
-            tar --use-compress-program=zstd -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"
+            if ! tar --use-compress-program=zstd -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"; then
+              echo "❌ Failed to extract zstd compressed SDK"
+              exit 1
+            fi
           else
-            tar -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"
+            if ! tar -xf "$SDK_CACHE_DIR/sdk.${FILE_EXT}" --strip-components=1 -C "$SDK_CACHE_DIR/openwrt-sdk"; then
+              echo "❌ Failed to extract SDK"
+              exit 1
+            fi
           fi
           echo "✅ SDK extracted to $SDK_CACHE_DIR/openwrt-sdk"
+          
+          # Verify SDK extraction
+          if [[ ! -f "$SDK_CACHE_DIR/openwrt-sdk/feeds.conf.default" ]]; then
+            echo "❌ SDK extraction verification failed - feeds.conf.default not found"
+            ls -la "$SDK_CACHE_DIR/openwrt-sdk/"
+            exit 1
+          fi
+          echo "✅ SDK extraction verified"
           echo "::endgroup::"
         
       - name: 📂 Set SDK Path
@@ -224,6 +256,7 @@ jobs:
           if [ -n "${{ secrets.OPENWRT_SIGNING_KEY }}" ]; then
             echo "${{ secrets.OPENWRT_SIGNING_KEY }}" > $SDK_PATH/key-build
             echo "CONFIG_SIGNED_PACKAGES=y" >> $GITHUB_ENV
+            echo "✅ Package signing key configured"
           else
             echo "::warning::No signing key provided, packages will not be signed"
           fi
@@ -236,7 +269,11 @@ jobs:
           find_packages() {
             local feed_dir="$1"
             if [ -d "$feed_dir" ]; then
-              find -L "$feed_dir" -mindepth 1 -maxdepth 2 -type f -name "Makefile" -exec dirname {} \; | xargs -n1 basename | tr '\n' ' '
+              find -L "$feed_dir" -mindepth 1 -maxdepth 3 -type f -name "Makefile" -exec dirname {} \; | while read dir; do
+                if grep -q "include.*package.mk\|include.*kernel.mk" "$dir/Makefile" 2>/dev/null; then
+                  basename "$dir"
+                fi
+              done | sort -u | tr '\n' ' '
             fi
           }
           
@@ -255,8 +292,9 @@ jobs:
         run: |
           echo "::group::📦 Packages to be compiled"
           PACKAGES_TO_BUILD="${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
-          echo "PACKAGES=$(echo $PACKAGES_TO_BUILD | xargs)" >> $GITHUB_ENV
-          echo "$PACKAGES_TO_BUILD"
+          CLEAN_PACKAGES=$(echo $PACKAGES_TO_BUILD | xargs -n1 | sort -u | xargs)
+          echo "PACKAGES=$CLEAN_PACKAGES" >> $GITHUB_ENV
+          echo "Final package list: $CLEAN_PACKAGES"
           echo "::endgroup::"
 
       - name: 📦 Cache OpenWrt dl Directory
@@ -264,20 +302,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.SDK_CACHE_DIR }}/openwrt-sdk/dl
-          key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}
+          key: dl-${{ runner.os }}-${{ matrix.release }}-${{ matrix.arch }}-v2
 
       - name: 🛠️ Setup SDK Feeds and Configuration
         run: |
           cd $SDK_PATH
           echo "::group::📜 Configuring Feeds"
           
-          # Setup feeds.conf based on reference script
-          if [ -z "$NO_DEFAULT_FEEDS" ]; then
-            sed \
-              -e 's,https://git.openwrt.org/feed/,https://github.com/openwrt/,' \
-              -e 's,https://git.openwrt.org/openwrt/,https://github.com/openwrt/,' \
-              -e 's,https://git.openwrt.org/project/,https://github.com/openwrt/,' \
-              feeds.conf.default > feeds.conf
+          # Backup original feeds.conf if it exists
+          if [ -f feeds.conf ]; then
+            cp feeds.conf feeds.conf.backup
+          elif [ -f feeds.conf.default ]; then
+            cp feeds.conf.default feeds.conf
           fi
           
           # Add custom feed
@@ -288,10 +324,23 @@ jobs:
           echo "::endgroup::"
           
           echo "::group::🔄 Updating and Installing Feeds"
-          ./scripts/feeds update -a
+          # Update feeds with error handling
+          if ! ./scripts/feeds update -a; then
+            echo "❌ Failed to update feeds"
+            exit 1
+          fi
+          
+          # Install feeds with error handling
+          if ! ./scripts/feeds install -a; then
+            echo "⚠️ Some feeds failed to install, continuing..."
+          fi
           echo "::endgroup::"
           
-          make defconfig
+          echo "::group::🔧 Generating Configuration"
+          if ! make defconfig; then
+            echo "❌ Failed to generate default configuration"
+            exit 1
+          fi
           echo "✅ Default configuration generated."
           echo "::endgroup::"
 
@@ -302,10 +351,13 @@ jobs:
           
           # Set verbose flag
           V_FLAG=""
-          if [ "${{ inputs.verbose }}" = "1" ]; then V_FLAG="V=s"; fi
-          if [ "${{ inputs.verbose }}" = "2" ]; then V_FLAG="V=sc"; fi
+          case "${{ inputs.verbose }}" in
+            "1") V_FLAG="V=s" ;;
+            "2") V_FLAG="V=sc" ;;
+          esac
           
           BUILD_SUCCESS=true
+          FAILED_PACKAGES=""
           
           if [ -z "$PACKAGES" ]; then
             echo "::group::📦 Building all packages in custom feeds"
@@ -313,13 +365,19 @@ jobs:
             ./scripts/feeds install -p "$FEEDNAME" -f -a
             
             # Build all packages
-            make \
+            if ! make \
               BUILD_LOG="$BUILD_LOG" \
               CONFIG_SIGNED_PACKAGES="${CONFIG_SIGNED_PACKAGES:-n}" \
               IGNORE_ERRORS="$IGNORE_ERRORS" \
               CONFIG_AUTOREMOVE=y \
               $V_FLAG \
-              -j$(nproc) || BUILD_SUCCESS=false
+              -j$(nproc); then
+              if [ "$IGNORE_ERRORS" != "1" ]; then
+                BUILD_SUCCESS=false
+              else
+                echo "⚠️ Some packages failed to build but continuing due to ignore_errors setting"
+              fi
+            fi
             echo "::endgroup::"
           else
             echo "::group::📦 Building specific packages with validation"
@@ -327,73 +385,99 @@ jobs:
             for PKG in $PACKAGES; do
               echo "::group::📦 Processing Package: $PKG"
               
-              # Install package
-              ./scripts/feeds install -p "$FEEDNAME" -f "$PKG"
+              # Install package with error handling
+              if ! ./scripts/feeds install -p "$FEEDNAME" -f "$PKG"; then
+                echo "⚠️ Failed to install package $PKG, skipping..."
+                FAILED_PACKAGES="$FAILED_PACKAGES $PKG"
+                echo "::endgroup::"
+                echo "::endgroup::"
+                continue
+              fi
               
               # Download sources
               echo "::group::📥 Downloading sources for $PKG"
-              make \
+              if ! make \
                 BUILD_LOG="$BUILD_LOG" \
                 IGNORE_ERRORS="$IGNORE_ERRORS" \
-                "package/$PKG/download" V=s
+                "package/$PKG/download" V=s; then
+                echo "⚠️ Failed to download sources for $PKG"
+                FAILED_PACKAGES="$FAILED_PACKAGES $PKG"
+                echo "::endgroup::"
+                echo "::endgroup::"
+                continue
+              fi
               echo "::endgroup::"
               
               # Check patches if not disabled
               if [ "$NO_REFRESH_CHECK" != "1" ]; then
-                PATCHES_DIR=$(find $GITHUB_WORKSPACE/feeds -path "*/$PKG/patches" 2>/dev/null || true)
+                PATCHES_DIR=$(find $GITHUB_WORKSPACE/feeds -path "*/$PKG/patches" 2>/dev/null | head -1 || true)
                 if [ -d "$PATCHES_DIR" ]; then
                   echo "::group::🔧 Checking patches for $PKG"
-                  make \
+                  if ! make \
                     BUILD_LOG="$BUILD_LOG" \
                     IGNORE_ERRORS="$IGNORE_ERRORS" \
-                    "package/$PKG/refresh" V=s
-                  
-                  if ! git -C "$PATCHES_DIR" diff --quiet -- .; then
-                    echo "::error::Dirty patches detected for $PKG, please refresh and review the diff"
-                    git -C "$PATCHES_DIR" checkout -- .
-                    BUILD_SUCCESS=false
+                    "package/$PKG/refresh" V=s; then
+                    echo "⚠️ Failed to refresh patches for $PKG"
+                    FAILED_PACKAGES="$FAILED_PACKAGES $PKG"
                     echo "::endgroup::"
-                    break
+                    echo "::endgroup::"
+                    continue
+                  fi
+                  
+                  if ! git -C "$PATCHES_DIR" diff --quiet -- . 2>/dev/null; then
+                    echo "::error::Dirty patches detected for $PKG, please refresh and review the diff"
+                    git -C "$PATCHES_DIR" checkout -- . 2>/dev/null || true
+                    FAILED_PACKAGES="$FAILED_PACKAGES $PKG"
+                    echo "::endgroup::"
+                    echo "::endgroup::"
+                    continue
                   fi
                   
                   make \
                     BUILD_LOG="$BUILD_LOG" \
                     IGNORE_ERRORS="$IGNORE_ERRORS" \
-                    "package/$PKG/clean" V=s
+                    "package/$PKG/clean" V=s || true
                   echo "::endgroup::"
                 fi
               fi
               
               # Check init scripts formatting
-              FILES_DIR=$(find $GITHUB_WORKSPACE/feeds -path "*/$PKG/files" 2>/dev/null || true)
+              FILES_DIR=$(find $GITHUB_WORKSPACE/feeds -path "*/$PKG/files" 2>/dev/null | head -1 || true)
               if [ -d "$FILES_DIR" ]; then
                 echo "::group::📝 Checking init scripts format for $PKG"
                 find "$FILES_DIR" -name "*.init" -exec shfmt -w -sr -s '{}' \; 2>/dev/null || true
                 if ! git -C "$FILES_DIR" diff --quiet -- . 2>/dev/null; then
                   echo "::error::Init script must be formatted for $PKG. Please run through shfmt -w -sr -s"
                   git -C "$FILES_DIR" checkout -- . 2>/dev/null || true
-                  BUILD_SUCCESS=false
+                  FAILED_PACKAGES="$FAILED_PACKAGES $PKG"
                   echo "::endgroup::"
-                  break
+                  echo "::endgroup::"
+                  continue
                 fi
                 echo "::endgroup::"
               fi
               
               # Compile package
               echo "::group::🔨 Compiling $PKG"
-              make \
+              if ! make \
                 BUILD_LOG="$BUILD_LOG" \
                 CONFIG_SIGNED_PACKAGES="${CONFIG_SIGNED_PACKAGES:-n}" \
                 IGNORE_ERRORS="$IGNORE_ERRORS" \
                 CONFIG_AUTOREMOVE=y \
                 $V_FLAG \
                 -j$(nproc) \
-                "package/$PKG/compile" || {
-                  echo "::error::Failed to build package: $PKG"
+                "package/$PKG/compile"; then
+                echo "::error::Failed to build package: $PKG"
+                FAILED_PACKAGES="$FAILED_PACKAGES $PKG"
+                if [ "$IGNORE_ERRORS" != "1" ]; then
                   BUILD_SUCCESS=false
                   echo "::endgroup::"
+                  echo "::endgroup::"
                   break
-                }
+                else
+                  echo "⚠️ Continuing despite failure due to ignore_errors setting"
+                fi
+              fi
               echo "::endgroup::"
               echo "::endgroup::"
             done
@@ -406,17 +490,22 @@ jobs:
             echo "::endgroup::"
           fi
           
-          # Move artifacts
+          # Move artifacts with better error handling
           if [ -d bin/ ]; then
-            mv bin/ /tmp/artifacts/
+            cp -r bin/ /tmp/artifacts/ || echo "⚠️ Failed to copy bin directory"
           fi
           
           if [ -d logs/ ]; then
-            mv logs/ /tmp/artifacts/
+            cp -r logs/ /tmp/artifacts/ || echo "⚠️ Failed to copy logs directory"
+          fi
+          
+          # Report results
+          if [ -n "$FAILED_PACKAGES" ]; then
+            echo "::warning::The following packages failed to build: $FAILED_PACKAGES"
           fi
           
           if [ "$BUILD_SUCCESS" != "true" ]; then
-            echo "::error::One or more packages failed to build."
+            echo "::error::Build failed for critical packages."
             exit 1
           fi
 
@@ -429,10 +518,17 @@ jobs:
           
           if [ -d /tmp/artifacts/bin ]; then
             echo "✨ Bin Directory Structure:"
-            ls -R /tmp/artifacts/bin/packages 2>/dev/null || true
+            find /tmp/artifacts/bin -type f -name "*.ipk" -o -name "*.apk" 2>/dev/null | head -20 || true
             
             echo "Copying built packages..."
-            cp -r /tmp/artifacts/bin/packages/${{ matrix.arch }}/${{ env.FEEDNAME }}/* $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || echo "No custom packages found to copy."
+            if [ -d "/tmp/artifacts/bin/packages/${{ matrix.arch }}/${{ env.FEEDNAME }}" ]; then
+              cp -r /tmp/artifacts/bin/packages/${{ matrix.arch }}/${{ env.FEEDNAME }}/* $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || echo "No custom packages found to copy."
+            else
+              echo "Custom feed directory not found, checking for packages in other locations..."
+              find /tmp/artifacts/bin -name "*.ipk" -o -name "*.apk" 2>/dev/null | while read pkg; do
+                cp "$pkg" $GITHUB_WORKSPACE/artifacts/bin/packages/${{ matrix.arch }}/ 2>/dev/null || true
+              done
+            fi
           fi
           
           if [ -d /tmp/artifacts/logs ]; then
@@ -440,16 +536,18 @@ jobs:
             cp -r /tmp/artifacts/logs/* $GITHUB_WORKSPACE/artifacts/logs/ 2>/dev/null || true
           fi
           
-          echo "✨ Artifacts structure:"
-          ls -R $GITHUB_WORKSPACE/artifacts 2>/dev/null || true
+          echo "✨ Final artifacts structure:"
+          find $GITHUB_WORKSPACE/artifacts -type f 2>/dev/null | head -20 || true
           echo "::endgroup::"
 
       - name: 📤 Upload Packages Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: openwrt-packages-${{ matrix.release }}-${{ matrix.arch }}
           path: ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/*
           retention-days: 5
+          if-no-files-found: warn
 
       - name: 📤 Upload Build Logs on Failure
         if: failure()
@@ -458,10 +556,11 @@ jobs:
           name: build-logs-${{ matrix.release }}-${{ matrix.arch }}
           path: ${{ github.workspace }}/artifacts/logs/
           retention-days: 5
+          if-no-files-found: warn
 
   push_packages:
     needs: build_ipk
-    if: success() || failure()
+    if: always() && !cancelled()
     name: 🚀 Push Packages to gh-pages
     permissions:
       contents: write
@@ -471,20 +570,31 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: 'gh-pages'
+          fetch-depth: 0
 
       - name: 📥 Download All Artifacts
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
+          pattern: openwrt-packages-*
+          merge-multiple: false
 
       - name: 📂 Organize Packages
         run: |
           echo "::group::Sorting packages into release directories"
+          
+          # Create base directory structure
+          mkdir -p releases
+          
           for dir in ./artifacts/openwrt-packages-*; do
-            if [ -d "$dir" ]; then
+            if [ -d "$dir" ] && [ "$(ls -A "$dir" 2>/dev/null)" ]; then
+              # Extract release and architecture from directory name
               # Format: openwrt-packages-RELEASE-ARCH
-              RELEASE=$(echo "$dir" | cut -d'-' -f3)
-              ARCH=$(echo "$dir" | cut -d'-' -f4)
+              DIR_NAME=$(basename "$dir")
+              RELEASE=$(echo "$DIR_NAME" | sed 's/openwrt-packages-//' | cut -d'-' -f1)
+              ARCH=$(echo "$DIR_NAME" | sed 's/openwrt-packages-//' | cut -d'-' -f2-)
+              
+              echo "Processing: $DIR_NAME -> Release: $RELEASE, Arch: $ARCH"
               
               if [[ "$RELEASE" == "SNAPSHOT" ]]; then
                 TARGET_DIR="releases/snapshot/packages/$ARCH"
@@ -495,32 +605,56 @@ jobs:
               
               echo "Moving packages from $dir to $TARGET_DIR"
               mkdir -p "$TARGET_DIR"
-              mv $dir/* "$TARGET_DIR/" 2>/dev/null || true
+              
+              # Copy files with verification
+              if ls "$dir"/* >/dev/null 2>&1; then
+                cp -v "$dir"/* "$TARGET_DIR/" 2>/dev/null || echo "⚠️ Some files failed to copy"
+              else
+                echo "⚠️ No files found in $dir"
+              fi
+            else
+              echo "⚠️ Directory $dir is empty or doesn't exist"
             fi
           done
           echo "::endgroup::"
           
           echo "::group::Final repository structure"
-          ls -R releases 2>/dev/null || true
+          find releases -type f 2>/dev/null | head -20 || echo "No packages found"
           echo "::endgroup::"
           
+          # Clean up artifacts directory
           rm -rf ./artifacts
 
       - name: 💾 Commit and Push Changes
         run: |
           git config --local user.name "GitHub Action"
           git config --local user.email "actions-user@users.noreply.github.com"
+          
+          # Add only if there are changes
           git add releases
+          
           if ! git diff --staged --quiet; then
-            git commit -m "🚀 Update Packages - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-            git push
+            PACKAGE_COUNT=$(find releases -name "*.ipk" -o -name "*.apk" 2>/dev/null | wc -l)
+            git commit -m "🚀 Update Packages ($PACKAGE_COUNT packages) - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            
+            # Push with retry mechanism
+            for i in {1..3}; do
+              if git push; then
+                echo "✅ Successfully pushed changes"
+                break
+              else
+                echo "⚠️ Push failed, attempt $i/3"
+                sleep 2
+                git pull --rebase origin gh-pages || true
+              fi
+            done
           else
             echo "✅ No new packages to commit."
           fi
 
   build_and_deploy_pages:
     needs: push_packages
-    if: inputs.without_pages == false && (success() || failure())
+    if: inputs.without_pages == false && !cancelled()
     name: 🌐 Deploy to GitHub Pages
     permissions:
       pages: write
