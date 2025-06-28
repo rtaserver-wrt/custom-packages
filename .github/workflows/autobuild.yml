@@ -325,7 +325,7 @@ jobs:
           src-git packages https://github.com/openwrt/packages.git;openwrt-$sdk_ver
           src-git luci https://github.com/openwrt/luci.git;openwrt-$sdk_ver
           src-git routing https://git.openwrt.org/feed/routing.git;openwrt-$sdk_ver
-          echo "src-link $FEEDNAME $GITHUB_WORKSPACE/feeds" >> feeds.conf
+          src-link $FEEDNAME $GITHUB_WORKSPACE/feeds"
           EOF
 
           echo "Feeds configuration:"
