@@ -119,6 +119,8 @@ jobs:
       # -------------------------------------------------------------------------
       - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for reliable git diff operations
 
       - name: 🛠️ Install System Dependencies
         run: |
@@ -357,16 +359,120 @@ jobs:
         run: |
           # Detect which packages changed in the last push (for incremental builds)
           echo "::group::Detecting changed packages in feeds"
-
-          CHANGED_MAKEFILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'feeds/*/*/Makefile')
+          
+          # Initialize variables
           PKGS=""
-          for f in $CHANGED_MAKEFILES; do
-            PKG=$(basename $(dirname "$f"))
-            PKGS="$PKGS $PKG"
-          done
-
-          PKGS=$(echo $PKGS | xargs -n1 | sort -u | xargs)
-          echo "Changed packages: $PKGS"
+          DETECTION_SUCCESS=false
+          
+          # Get commit information
+          CURRENT_SHA="${{ github.sha }}"
+          BEFORE_SHA="${{ github.event.before }}"
+          
+          echo "Current commit: $CURRENT_SHA"
+          echo "Before commit: $BEFORE_SHA"
+          
+          # Temporarily disable exit on error for git operations
+          set +e
+          
+          # Strategy 1: Use github.event.before if available and valid
+          if [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            echo "Checking if before commit exists..."
+            if git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
+              echo "✅ Before commit exists, using git diff with event.before"
+              CHANGED_MAKEFILES=$(git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA" -- 'feeds/*/*/Makefile' 2>/dev/null)
+              if [ $? -eq 0 ]; then
+                DETECTION_SUCCESS=true
+                echo "Strategy 1 (event.before): SUCCESS"
+              else
+                echo "⚠️ Strategy 1 (event.before): git diff failed"
+              fi
+            else
+              echo "⚠️ Before commit $BEFORE_SHA does not exist in repository"
+            fi
+          else
+            echo "⚠️ Before commit is null or zero hash (likely first push)"
+          fi
+          
+          # Strategy 2: Use HEAD~1 if Strategy 1 failed
+          if [ "$DETECTION_SUCCESS" = "false" ]; then
+            echo "Trying Strategy 2: HEAD~1 comparison..."
+            if git cat-file -e "HEAD~1" 2>/dev/null; then
+              echo "✅ HEAD~1 exists, using git diff with HEAD~1"
+              CHANGED_MAKEFILES=$(git diff --name-only "HEAD~1" "HEAD" -- 'feeds/*/*/Makefile' 2>/dev/null)
+              if [ $? -eq 0 ]; then
+                DETECTION_SUCCESS=true
+                echo "Strategy 2 (HEAD~1): SUCCESS"
+              else
+                echo "⚠️ Strategy 2 (HEAD~1): git diff failed"
+              fi
+            else
+              echo "⚠️ HEAD~1 does not exist (likely single commit repository)"
+            fi
+          fi
+          
+          # Strategy 3: Use merge-base with main/master if available
+          if [ "$DETECTION_SUCCESS" = "false" ]; then
+            echo "Trying Strategy 3: merge-base comparison..."
+            for base_branch in main master; do
+              if git show-ref --verify --quiet "refs/remotes/origin/$base_branch"; then
+                MERGE_BASE=$(git merge-base "HEAD" "origin/$base_branch" 2>/dev/null)
+                if [ -n "$MERGE_BASE" ] && [ "$MERGE_BASE" != "$CURRENT_SHA" ]; then
+                  echo "✅ Found merge-base with origin/$base_branch: $MERGE_BASE"
+                  CHANGED_MAKEFILES=$(git diff --name-only "$MERGE_BASE" "HEAD" -- 'feeds/*/*/Makefile' 2>/dev/null)
+                  if [ $? -eq 0 ]; then
+                    DETECTION_SUCCESS=true
+                    echo "Strategy 3 (merge-base with $base_branch): SUCCESS"
+                    break
+                  else
+                    echo "⚠️ Strategy 3 (merge-base with $base_branch): git diff failed"
+                  fi
+                else
+                  echo "⚠️ No valid merge-base found with origin/$base_branch"
+                fi
+              else
+                echo "⚠️ Branch origin/$base_branch does not exist"
+              fi
+            done
+          fi
+          
+          # Strategy 4: Check all files in last commit if all else fails
+          if [ "$DETECTION_SUCCESS" = "false" ]; then
+            echo "Trying Strategy 4: files changed in current commit..."
+            CHANGED_MAKEFILES=$(git diff-tree --no-commit-id --name-only -r "HEAD" -- 'feeds/*/*/Makefile' 2>/dev/null)
+            if [ $? -eq 0 ]; then
+              DETECTION_SUCCESS=true
+              echo "Strategy 4 (current commit files): SUCCESS"
+            else
+              echo "⚠️ Strategy 4 (current commit files): failed"
+            fi
+          fi
+          
+          # Re-enable exit on error
+          set -e
+          
+          # Process the results
+          if [ "$DETECTION_SUCCESS" = "true" ] && [ -n "$CHANGED_MAKEFILES" ]; then
+            echo "Found changed Makefiles:"
+            echo "$CHANGED_MAKEFILES"
+            
+            # Extract package names from changed Makefiles
+            for f in $CHANGED_MAKEFILES; do
+              if [ -f "$f" ]; then
+                PKG=$(basename $(dirname "$f"))
+                PKGS="$PKGS $PKG"
+                echo "  - Package: $PKG (from $f)"
+              fi
+            done
+            
+            # Clean up package list
+            PKGS=$(echo $PKGS | xargs -n1 | sort -u | xargs)
+            echo "✅ Successfully detected changed packages: $PKGS"
+          else
+            echo "⚠️ No changed packages detected or all strategies failed"
+            echo "This will trigger a full build of all packages"
+            PKGS=""
+          fi
+          
           echo "content=$PKGS" >> $GITHUB_OUTPUT
           echo "::endgroup::"
 
