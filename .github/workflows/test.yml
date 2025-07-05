@@ -44,7 +44,7 @@ on:
       signed_packages:
         description: 'Enable package signing'
         required: false
-        default: false
+        default: true
         type: boolean
       ignore_errors:
         description: 'Continue building even if some packages fail'
