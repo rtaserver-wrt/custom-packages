@@ -88,6 +88,12 @@ git_clone() {
     local max_attempts=3
     local attempt=1
 
+    # Remove destination directory if it exists to avoid clone errors
+    if [[ -n "$destination" && -d "$destination" ]]; then
+        log_warning "Destination directory $destination already exists, removing before clone."
+        rm -rf "$destination"
+    fi
+
     while [[ $attempt -le $max_attempts ]]; do
         log_info "Cloning $url (attempt $attempt/$max_attempts)..."
 
@@ -219,7 +225,7 @@ main() {
         git_clone https://github.com/xiaorouji/openwrt-passwall-packages && mvdir openwrt-passwall-packages
         git_sparse_clone "main" "https://github.com/nikkinikki-org/OpenWrt-nikki" \
             "luci-app-nikki" "nikki"
-        git_clone https://github.com/derisamedia/luci-theme-alpha && mv luci-theme-alpha "$PACKAGES_DIR/luci-theme-alpha"
+        git_clone https://github.com/derisamedia/luci-theme-alpha "$PACKAGES_DIR/luci-theme-alpha"
     ) &&
     (
         git_sparse_clone "master" "https://github.com/vernesong/OpenClash" "luci-app-openclash"
