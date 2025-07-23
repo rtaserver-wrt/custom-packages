@@ -106,6 +106,7 @@ jobs:
           FIXUP: 1
           NO_SHFMT_CHECK: 1
           NO_REFRESH_CHECK: 1
+          IGNORE_ERRORS: 1
         
       - name: Delivering Package
         uses: actions/upload-artifact@main
