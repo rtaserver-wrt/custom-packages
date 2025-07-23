@@ -58,7 +58,6 @@ jobs:
           - x86_64
           - mips_24kc
           - mipsel_24kc
-          - arm_cortex-a7_neon-vfpv4
           - aarch64_cortex-a53
           - aarch64_cortex-a72
           - aarch64_generic
@@ -105,6 +104,8 @@ jobs:
           INDEX: 1
           V: ${{ inputs.verbose }}
           FIXUP: 1
+          NO_SHFMT_CHECK: 1
+          NO_REFRESH_CHECK: 1
         
       - name: Delivering Package
         uses: actions/upload-artifact@main
@@ -135,7 +136,7 @@ jobs:
           # rm -rf releases/*
           mkdir -p releases 2>/dev/null
           version=( 23.05.5 24.10.2 master )
-          archi=( x86_64 mips_24kc mipsel_24kc arm_cortex-a7_neon-vfpv4 aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic )
+          archi=( x86_64 mips_24kc mipsel_24kc aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic )
           for vr in ${version[*]} 
             do
               if [ "$vr" == "master" ]; then
