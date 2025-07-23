@@ -15,6 +15,6 @@ PKG_VERSION:=1.0.74
 PKG_RELEASE:=20241111
 PKG_MAINTAINER:=Rafał Wabik <4Rafal@gmail.com>
 
-include ../../luci.mk
+include $(TOPDIR)/feeds/luci/luci.mk
 
 # call BuildPackage - OpenWrt buildroot signature
