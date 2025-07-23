@@ -32,7 +32,7 @@ on:
         
       without_pages:
         description: 'Dont deploy pages'
-        required: true
+        required: false
         default: false
         type: boolean
         
@@ -64,7 +64,7 @@ jobs:
           
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           ref: main
 
@@ -92,7 +92,7 @@ jobs:
         run: echo "Compiled Packages | ${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
         
       - name: Creating Directory
-        run: mkdir artifacts
+        run: mkdir -p artifacts
          
       - name: Building Package
         uses: rtaserver-wrt/gh-action-sdk@main
@@ -100,7 +100,7 @@ jobs:
           ARCH: ${{ matrix.arch }}-${{ matrix.release }}
           ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
           FEED_DIR: ${{ github.workspace }}/feeds
-          PACKAGES: ${{ steps.list_package.outputs.content}} ${{ inputs.compile_pkg }}
+          PACKAGES: ${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}
           INDEX: 1
           V: ${{ inputs.verbose }}
           FIXUP: 1
@@ -109,7 +109,7 @@ jobs:
           IGNORE_ERRORS: 1
         
       - name: Delivering Package
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v4
         with:
           name: openwrt_${{ matrix.release }}_${{ matrix.arch }}
           path: ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/*
@@ -122,14 +122,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           ref: 'gh-pages'
           lfs: false
           submodules: false
       
       - name: Download temporary artifact
-        uses: actions/download-artifact@main
+        uses: actions/download-artifact@v4
         
       - name: Moving artifact to releases
         shell: bash
@@ -139,20 +139,22 @@ jobs:
           version=( 23.05.5 24.10.2 SNAPSHOT )
           archi=( x86_64 mips_24kc mipsel_24kc aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic )
           for vr in ${version[*]} 
+          do
+            if [ "$vr" == "SNAPSHOT" ]; then
+              vers="snapshot"
+            else
+              vers=$(echo $vr | sed 's/..$//')
+            fi
+            for arc in ${archi[*]} 
             do
-              if [ "$vr" == "SNAPSHOT" ]; then
-                vers="snapshot"
-              else
-                vers=$(echo $vr | sed 's/..$//')
+              rm -rf releases/$vers/packages/$arc
+              mkdir -p releases/$vers/packages/$arc
+              if [ -d "openwrt_${vr}_${arc}" ]; then
+                cp -rf openwrt_${vr}_${arc}/* releases/$vers/packages/$arc/
+                rm -rf releases/$vers/packages/$arc/routing releases/$vers/packages/$arc/telephony
               fi
-              for arc in ${archi[*]} 
-                do
-                  rm -rf releases/$vers/packages/$arc
-                  mkdir -p releases/$vers/packages/$arc
-                  cp -rf openwrt_$vr\_$arc/* releases/$vers/packages/$arc
-                  rm -rf releases/$vers/packages/$arc/routing releases/$vers/packages/$arc/telephony
-                done
             done
+          done
           
           rm -rf openwrt_* 2>/dev/null
           
@@ -167,26 +169,30 @@ jobs:
           git config --local user.name "GitHub Action"
           git config --local user.email "actions-user@users.noreply.github.com"
           git add .
-          git commit -m "Update Packages"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update Packages"
+            git push
+          fi
           
   build_pages:
     needs: push_packages
-    if: inputs.without_pages == 0 && !cancelled()
+    if: inputs.without_pages == false && !cancelled()
     name: Building pages
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           ref: 'gh-pages'
           lfs: true
           submodules: true
           
       - name: Setup Ruby
-        uses: ruby/setup-ruby@main
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.1'
           bundler-cache: true
@@ -199,7 +205,7 @@ jobs:
         
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@main
+        uses: actions/configure-pages@v4
         
       - name: Build with Jekyll
         run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
@@ -207,7 +213,7 @@ jobs:
           JEKYLL_ENV: production
           
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@main
+        uses: actions/upload-pages-artifact@v3
         
   deploy:
     environment:
@@ -215,10 +221,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build_pages
+    if: inputs.without_pages == false && !cancelled()
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@main
+        uses: actions/deploy-pages@v4
         
 
   clear_artifact:
@@ -230,7 +237,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Delete workflow runs
-        uses: Mattraks/delete-workflow-runs@main
+        uses: Mattraks/delete-workflow-runs@v2
         with:
           retain_days: 5
           keep_minimum_runs: 2
