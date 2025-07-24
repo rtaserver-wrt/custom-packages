@@ -90,7 +90,8 @@ jobs:
           INDEX: 1
           V: ${{ inputs.verbose }}
           FIXUP: 1
-          IGNORE_ERRORS: 1
+          IGNORE_ERRORS: true
+          NO_REFRESH_CHECK: true
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
