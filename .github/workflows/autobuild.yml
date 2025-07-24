@@ -10,62 +10,51 @@ on:
     paths-ignore:
       - '.github/workflows/**'
       - 'README.md'
-    
   workflow_dispatch:
     inputs:
       compile_pkg:
-        description: 'Compile packages (default : all packages)'
+        description: 'Packages to compile (default: all packages)'
         required: false
         default: ''
         type: string
-        
       verbose:
-        description: 'Verbose (default : 0)'
+        description: 'Enable verbose output (default: 0)'
         required: false
         default: '0'
         type: string
-        
       without_pages:
-        description: 'Dont deploy pages'
+        description: 'Skip deploying GitHub Pages'
         required: false
         default: false
         type: boolean
-        
+
 permissions:
-  contents: read
+  actions: write
+  contents: write
+  packages: write
+  issues: write
+  pull-requests: write
   pages: write
   id-token: write
-  
-jobs: 
+
+jobs:
   build_ipk:
-    permissions:
-      contents: write
-    name: AutoCompiler
+    name: Build OpenWrt Packages
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        release:
-          - 23.05.5
-          - 24.10.2
-          - SNAPSHOT
-        arch:
-          - x86_64
-          - mips_24kc
-          - mipsel_24kc
-          - aarch64_cortex-a53
-          - aarch64_cortex-a72
-          - aarch64_generic
-          
+        release: [openwrt-23.05, openwrt-24.10, SNAPSHOT]
+        arch: [x86_64, mips_24kc, mipsel_24kc, aarch64_cortex-a53, aarch64_cortex-a72, aarch64_generic]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           ref: main
 
-      - name: Reading Package 
-        if: inputs.compile_pkg == ''
+      - name: List Available Packages
         id: list_package
+        if: inputs.compile_pkg == ''
         run: |
           find_packages() {
             local feed_dir="$1"
@@ -77,18 +66,20 @@ jobs:
               done | sort -u | tr '\n' ' '
             fi
           }
-
           packages=$(find_packages "$GITHUB_WORKSPACE/feeds")
-          combined_packages=$(echo "$packages" | xargs -n1 | sort -u | xargs)
-          echo "content=$combined_packages" >> $GITHUB_OUTPUT
+          echo "content=$packages" >> $GITHUB_OUTPUT
+        shell: bash
 
-      - name: List Compiled Packages
-        run: echo "Compiled Packages | ${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
-        
-      - name: Creating Directory
+      - name: Display Compiled Packages
+        run: |
+          echo "Packages to compile: ${{ steps.list_package.outputs.content }} ${{ inputs.compile_pkg }}"
+        shell: bash
+
+      - name: Create Artifacts Directory
         run: mkdir -p artifacts
-         
-      - name: Building Package
+        shell: bash
+
+      - name: Build Packages
         uses: rtaserver-wrt/gh-action-sdk@main
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.release }}
@@ -99,139 +90,139 @@ jobs:
           INDEX: 1
           V: ${{ inputs.verbose }}
           FIXUP: 1
-          # NO_SHFMT_CHECK: 1
-          # NO_REFRESH_CHECK: 1
           IGNORE_ERRORS: 1
-        
-      - name: Delivering Package
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: openwrt_${{ matrix.release }}_${{ matrix.arch }}
           path: ${{ github.workspace }}/artifacts/bin/packages/${{ matrix.arch }}/*
+          if-no-files-found: warn
+          retention-days: 5
 
   push_packages:
+    name: Push Packages to Repository
     needs: build_ipk
-    name: Push Packages 
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout gh-pages Branch
         uses: actions/checkout@v4
         with:
-          ref: 'gh-pages'
+          ref: gh-pages
           lfs: false
           submodules: false
-      
-      - name: Download temporary artifact
+
+      - name: Download Artifacts
         uses: actions/download-artifact@v4
-        
-      - name: Moving artifact to releases
-        shell: bash
+        with:
+          path: artifacts
+
+      - name: Organize Artifacts
         run: |
-          # rm -rf releases/*
-          mkdir -p releases 2>/dev/null
-          version=( 23.05.5 24.10.2 SNAPSHOT )
-          archi=( x86_64 mips_24kc mipsel_24kc aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic )
-          for vr in ${version[*]} 
-          do
-            if [ "$vr" == "SNAPSHOT" ]; then
-              vers="snapshot"
-            else
-              vers=$(echo $vr | sed 's/..$//')
-            fi
-            for arc in ${archi[*]} 
-            do
-              rm -rf releases/$vers/packages/$arc
-              mkdir -p releases/$vers/packages/$arc
-              if [ -d "openwrt_${vr}_${arc}" ]; then
-                cp -rf openwrt_${vr}_${arc}/* releases/$vers/packages/$arc/
-                rm -rf releases/$vers/packages/$arc/routing releases/$vers/packages/$arc/telephony
+          mkdir -p releases
+          for version in openwrt-23.05 openwrt-24.10 SNAPSHOT; do
+            vers=${version#openwrt-}
+            vers=${vers/SNAPSHOT/snapshot}
+            for arch in x86_64 mips_24kc mipsel_24kc aarch64_cortex-a53 aarch64_cortex-a72 aarch64_generic; do
+              artifact_dir="artifacts/openwrt_${version}_${arch}"
+              target_dir="releases/$vers/packages/$arch"
+              if [ -d "$artifact_dir" ]; then
+                mkdir -p "$target_dir"
+                cp -rf "$artifact_dir"/* "$target_dir"/
+                rm -rf "$target_dir"/{routing,telephony}
               fi
             done
           done
-          
-          rm -rf openwrt_* 2>/dev/null
-          
-      - name: Display structure files
-        working-directory: releases
-        run: ls -R
-        
-      - name: Commit and push Packages
-        env:
-          Branch: gh-pages
+          rm -rf artifacts
+        shell: bash
+
+      - name: Display Repository Structure
+        run: tree releases || ls -R releases
+        shell: bash
+
+      - name: Commit and Push Packages
         run: |
-          git config --local user.name "GitHub Action"
-          git config --local user.email "actions-user@users.noreply.github.com"
-          git add .
+          git config user.name "GitHub Action"
+          git config user.email "actions-user@users.noreply.github.com"
+          git add releases
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update Packages"
+            git commit -m "Update OpenWrt packages for ${{ matrix.release }}-${{ matrix.arch }}"
             git push
           fi
-          
+        shell: bash
+
   build_pages:
+    name: Build GitHub Pages
     needs: push_packages
     if: inputs.without_pages == false && !cancelled()
-    name: Building pages
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+      pages: write
     steps:
-      - name: Checkout
+      - name: Checkout gh-pages Branch
         uses: actions/checkout@v4
         with:
-          ref: 'gh-pages'
+          ref: gh-pages
           lfs: true
           submodules: true
-          
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.1'
           bundler-cache: true
-          cache-version: 0 
-          
-      - name: prenodes
+
+      - name: Run Pre-build Script
         env:
           SERVER_HOME: releases
         run: ./prenodes.sh
-        
-      - name: Setup Pages
+        shell: bash
+
+      - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@v4
-        
-      - name: Build with Jekyll
+
+      - name: Build Jekyll Site
         run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
         env:
           JEKYLL_ENV: production
-          
-      - name: Upload artifact
+        shell: bash
+
+      - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
-        
+        with:
+          path: _site
+
   deploy:
+    name: Deploy GitHub Pages
+    needs: build_pages
+    if: inputs.without_pages == false && !cancelled()
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build_pages
-    if: inputs.without_pages == false && !cancelled()
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        
 
   clear_artifact:
+    name: Clear Old Artifacts
     needs: push_packages
-    name: Clearing Artifact
+    runs-on: ubuntu-latest
     permissions:
       actions: write
       contents: read
-    runs-on: ubuntu-latest
     steps:
-      - name: Delete workflow runs
+      - name: Delete Old Workflow Artifacts
         uses: Mattraks/delete-workflow-runs@v2
         with:
           retain_days: 5
